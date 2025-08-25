@@ -1,0 +1,181 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "path": "fortisiem-alerts",
+        "responseMode": "onReceived"
+      },
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "functionCode": "const classify = require('../scripts/classifyAlert');\nreturn classify($input.all()[0].json);"
+      },
+      "name": "Classifier",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": [
+            {
+              "name": "network",
+              "value": "network"
+            },
+            {
+              "name": "app",
+              "value": "app"
+            },
+            {
+              "name": "endpoint",
+              "value": "endpoint"
+            }
+          ]
+        },
+        "value1": "={{$json[\"type\"]}}"
+      },
+      "name": "Route Alert",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "functionCode": "const networkAnalysis = require('../scripts/networkAI');\nreturn networkAnalysis($input.all()[0].json);"
+      },
+      "name": "Network AI",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "functionCode": "const appAnalysis = require('../scripts/appAI');\nreturn appAnalysis($input.all()[0].json);"
+      },
+      "name": "App AI",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "functionCode": "const endpointAnalysis = require('../scripts/endpointAI');\nreturn endpointAnalysis($input.all()[0].json);"
+      },
+      "name": "Endpoint AI",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "functionCode": "const threatIntel = require('../scripts/threatIntelAI');\nreturn threatIntel({\n  network: $input.all()[0].json,\n  app: $input.all()[1].json,\n  endpoint: $input.all()[2].json\n});"
+      },
+      "name": "Threat Intel AI",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "channel": "C12345678",
+        "text": "Threat Intel Alert:\nVerdict: {{$json[\"verdict\"]}}\nConfidence: {{$json[\"confidence\"]}}\nActions: {{$json[\"actions\"]}}",
+        "options": {}
+      },
+      "name": "Slack Alert",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 1
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Classifier",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Classifier": {
+      "main": [
+        [
+          {
+            "node": "Route Alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route Alert": {
+      "main": [
+        [
+          {
+            "node": "Network AI",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "App AI",
+            "type": "main",
+            "index": 1
+          }
+        ],
+        [
+          {
+            "node": "Endpoint AI",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "Network AI": {
+      "main": [
+        [
+          {
+            "node": "Threat Intel AI",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "App AI": {
+      "main": [
+        [
+          {
+            "node": "Threat Intel AI",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Endpoint AI": {
+      "main": [
+        [
+          {
+            "node": "Threat Intel AI",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "Threat Intel AI": {
+      "main": [
+        [
+          {
+            "node": "Slack Alert",
+            "type": "main",
+            
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

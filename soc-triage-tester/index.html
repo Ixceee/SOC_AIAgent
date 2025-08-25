@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>SOC Alert Tester</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { font-family: Arial; padding: 20px; }
+        .panel { display: flex; margin-bottom: 20px; }
+        .form-panel { flex: 1; padding: 15px; border: 1px solid #ddd; }
+        .results-panel { flex: 2; padding: 15px; border: 1px solid #ddd; margin-left: 10px; }
+        textarea { width: 100%; height: 200px; }
+        button { padding: 10px 15px; background: #0066cc; color: white; border: none; cursor: pointer; }
+        .log-entry { margin: 5px 0; padding: 5px; background: #f5f5f5; }
+    </style>
+</head>
+<body>
+    <h1>SOC Alert Triage Tester</h1>
+    
+    <div class="panel">
+        <div class="form-panel">
+            <h2>Alert Submission</h2>
+            <select id="alertType">
+                <option value="network">Network Alert</option>
+                <option value="endpoint">Endpoint Alert</option>
+                <option value="app">Application Alert</option>
+            </select>
+            
+            <textarea id="alertData" placeholder="Paste JSON alert or edit...">
+{
+  "type": "network",
+  "srcip": "192.168.1.1",
+  "dstip": "10.0.0.5",
+  "severity": 4,
+  "timestamp": "2023-11-15T08:00:00Z"
+}</textarea>
+            
+            <button id="submitBtn">Submit Alert</button>
+            
+            <h3>Sample Alerts</h3>
+            <button class="sampleBtn" data-sample="bruteforce">Brute Force Attempt</button>
+            <button class="sampleBtn" data-sample="malware">Malware Detection</button>
+        </div>
+        
+        <div class="results-panel">
+            <h2>Analysis Results</h2>
+            <div id="results"></div>
+            <canvas id="severityChart" width="400" height="200"></canvas>
+            <div id="logOutput"></div>
+        </div>
+    </div>
+
+    <script>
+        const { ipcRenderer } = require('electron');
+        const samples = {
+            bruteforce: {
+                type: "endpoint",
+                event: "auth-failed",
+                user: "admin",
+                count: 15,
+                severity: 5
+            },
+            malware: {
+                type: "endpoint",
+                detection: "Trojan.Generic",
+                process: "svchost.exe",
+                severity: 5
+            }
+        };
+
+        // Chart setup
+        const ctx = document.getElementById('severityChart').getContext('2d');
+        const chart = new Chart(ctx, {
+            type: 'bar',
+            data: { labels: [], datasets: [{ label: 'Severity', data: [] }] }
+        });
+
+        document.getElementById('submitBtn').addEventListener('click', async () => {
+            const alertData = JSON.parse(document.getElementById('alertData').value);
+            const result = await ipcRenderer.invoke('submit-alert', alertData);
+            
+            document.getElementById('results').innerHTML = 
+                `<pre>${JSON.stringify(result, null, 2)}</pre>`;
+            
+            // Update chart
+            chart.data.labels.push(new Date().toLocaleTimeString());
+            chart.data.datasets[0].data.push(result.severity || 3);
+            chart.update();
+            
+            // Add to log
+            const logEntry = document.createElement('div');
+            logEntry.className = 'log-entry';
+            logEntry.textContent = `[${new Date().toLocaleString()}] ${result.type} Alert - Severity: ${result.severity}`;
+            document.getElementById('logOutput').prepend(logEntry);
+        });
+
+        // Sample alerts
+        document.querySelectorAll('.sampleBtn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.getElementById('alertData').value = 
+                    JSON.stringify(samples[btn.dataset.sample], null, 2);
+            });
+        });
+    </script>
+</body>
+</html>

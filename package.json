@@ -1,0 +1,56 @@
+{
+  "name": "soc_aiagent",
+  "version": "1.0.0",
+  "description": "SOC AI Agent for automated alert triage and analysis",
+  "main": "server.js",
+  "bin": {
+    "soc_aiagent": "bin/runAnalysis.js"
+  },
+  "scripts": {
+    "start": "node server.js",
+    "analyze": "node bin/runAnalysis.js",
+    "test": "jest --coverage",
+    "test-api": "newman run tests/soc-triage-tests.json",
+    "load-test": "jmeter -n -t tests/load-test.jmx",
+    "lint": "eslint .",
+    "dev": "nodemon server.js",
+    "gui": "electron gui/main.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Ixceee/SOC_AIAgent.git"
+  },
+  "keywords": [
+    "SOC",
+    "security",
+    "AI",
+    "triage"
+  ],
+  "author": "Your Name",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Ixceee/SOC_AIAgent/issues"
+  },
+  "homepage": "https://github.com/Ixceee/SOC_AIAgent#readme",
+  "dependencies": {
+    "axios": "^1.6.7",
+    "csvtojson": "^2.0.10",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "morgan": "^1.10.1",
+    "prom-client": "^14.2.0",
+    "redis": "^4.6.13",
+    "uuid": "^9.0.1",
+    "winston": "^3.11.0"
+  },
+  "devDependencies": {
+    "electron": "^28.1.0",
+    "eslint": "^8.56.0",
+    "jest": "^29.7.0",
+    "newman": "^5.3.2",
+    "nodemon": "^3.0.2"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

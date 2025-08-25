@@ -1,0 +1,572 @@
+[
+  {
+    "original": {
+      "Event Receive Time": "2025-06-19 17:34:33",
+      "Reporting IP": "172.20.0.1",
+      "Event Type": "FortiGate-traffic-allowed",
+      "Event Name": "Permitted traffic",
+      "Raw Event Log": "<13>date=2025-06-19 time=17:34:33 devname=\"EvvoTevvo\" devid=\"FG101FTK20008934\" eventtime=1750325673256356648 tz=\"+0800\" logid=\"0001000014\" type=\"traffic\" subtype=\"local\" level=\"notice\" vd=\"root\" srcip=172.31.27.236 identifier=13292 srcintf=\"AWS2GentingFG\" srcintfrole=\"undefined\" dstip=172.20.0.1 dstintf=\"root\" dstintfrole=\"undefined\" srccountry=\"Reserved\" dstcountry=\"Reserved\" sessionid=63022913 proto=1 action=\"accept\" policyid=11 policytype=\"policy\" poluuid=\"fea21c48-3cf3-51f0-d0ad-93c57786013e\" policyname=\"Incoming AWS2GentingFG\" service=\"PING\" trandisp=\"noop\" app=\"PING\" duration=61 sentbyte=420 rcvdbyte=420 sentpkt=5 rcvdpkt=5 vpntype=\"ipsecvpn\""
+    },
+    "type": "unknown",
+    "severity": 3,
+    "timestamp": "2025-08-18T01:16:34.173Z",
+    "device": "unknown",
+    "threat_intel": null,
+    "id": "1755479794173"
+  },
+  {
+    "original": {
+      "Event Receive Time": "2025-06-19 17:34:33",
+      "Reporting IP": "172.20.0.1",
+      "Event Type": "FortiGate-traffic-allowed",
+      "Event Name": "Permitted traffic",
+      "Raw Event Log": "<13>date=2025-06-19 time=17:34:33 devname=\"EvvoTevvo\" devid=\"FG101FTK20008934\" eventtime=1750325673256356648 tz=\"+0800\" logid=\"0001000014\" type=\"traffic\" subtype=\"local\" level=\"notice\" vd=\"root\" srcip=172.31.27.236 identifier=13292 srcintf=\"AWS2GentingFG\" srcintfrole=\"undefined\" dstip=172.20.0.1 dstintf=\"root\" dstintfrole=\"undefined\" srccountry=\"Reserved\" dstcountry=\"Reserved\" sessionid=63022913 proto=1 action=\"accept\" policyid=11 policytype=\"policy\" poluuid=\"fea21c48-3cf3-51f0-d0ad-93c57786013e\" policyname=\"Incoming AWS2GentingFG\" service=\"PING\" trandisp=\"noop\" app=\"PING\" duration=61 sentbyte=420 rcvdbyte=420 sentpkt=5 rcvdpkt=5 vpntype=\"ipsecvpn\""
+    },
+    "type": "unknown",
+    "severity": 3,
+    "timestamp": "2025-08-18T01:16:35.763Z",
+    "device": "unknown",
+    "threat_intel": null,
+    "id": "1755479795763"
+  },
+  {
+    "original": {
+      "Event Receive Time": "2025-06-19 17:34:33",
+      "Reporting IP": "172.20.0.1",
+      "Event Type": "FortiGate-traffic-allowed",
+      "Event Name": "Permitted traffic",
+      "Raw Event Log": "<13>date=2025-06-19 time=17:34:33 devname=\"EvvoTevvo\" devid=\"FG101FTK20008934\" eventtime=1750325673256356648 tz=\"+0800\" logid=\"0001000014\" type=\"traffic\" subtype=\"local\" level=\"notice\" vd=\"root\" srcip=172.31.27.236 identifier=13292 srcintf=\"AWS2GentingFG\" srcintfrole=\"undefined\" dstip=172.20.0.1 dstintf=\"root\" dstintfrole=\"undefined\" srccountry=\"Reserved\" dstcountry=\"Reserved\" sessionid=63022913 proto=1 action=\"accept\" policyid=11 policytype=\"policy\" poluuid=\"fea21c48-3cf3-51f0-d0ad-93c57786013e\" policyname=\"Incoming AWS2GentingFG\" service=\"PING\" trandisp=\"noop\" app=\"PING\" duration=61 sentbyte=420 rcvdbyte=420 sentpkt=5 rcvdpkt=5 vpntype=\"ipsecvpn\""
+    },
+    "type": "unknown",
+    "severity": 3,
+    "timestamp": "2025-08-18T01:16:37.267Z",
+    "device": "unknown",
+    "threat_intel": null,
+    "id": "1755479797267"
+  },
+  {
+    "original": {
+      "Event Receive Time": "2025-06-19 17:34:33",
+      "Reporting IP": "172.20.0.1",
+      "Event Type": "FortiGate-traffic-allowed",
+      "Event Name": "Permitted traffic",
+      "Raw Event Log": "<13>date=2025-06-19 time=17:34:33 devname=\"EvvoTevvo\" devid=\"FG101FTK20008934\" eventtime=1750325673256356648 tz=\"+0800\" logid=\"0001000014\" type=\"traffic\" subtype=\"local\" level=\"notice\" vd=\"root\" srcip=172.31.27.236 identifier=13292 srcintf=\"AWS2GentingFG\" srcintfrole=\"undefined\" dstip=172.20.0.1 dstintf=\"root\" dstintfrole=\"undefined\" srccountry=\"Reserved\" dstcountry=\"Reserved\" sessionid=63022913 proto=1 action=\"accept\" policyid=11 policytype=\"policy\" poluuid=\"fea21c48-3cf3-51f0-d0ad-93c57786013e\" policyname=\"Incoming AWS2GentingFG\" service=\"PING\" trandisp=\"noop\" app=\"PING\" duration=61 sentbyte=420 rcvdbyte=420 sentpkt=5 rcvdpkt=5 vpntype=\"ipsecvpn\""
+    },
+    "type": "unknown",
+    "severity": 3,
+    "timestamp": "2025-08-18T01:16:38.789Z",
+    "device": "unknown",
+    "threat_intel": null,
+    "id": "1755479798789"
+  },
+  {
+    "original": {
+      "Event Receive Time": "2025-06-19 17:34:33",
+      "Reporting IP": "172.20.0.1",
+      "Event Type": "FortiGate-traffic-allowed",
+      "Event Name": "Permitted traffic",
+      "Raw Event Log": "<13>date=2025-06-19 time=17:34:33 devname=\"EvvoTevvo\" devid=\"FG101FTK20008934\" eventtime=1750325673256356648 tz=\"+0800\" logid=\"0001000014\" type=\"traffic\" subtype=\"local\" level=\"notice\" vd=\"root\" srcip=172.31.27.236 identifier=13292 srcintf=\"AWS2GentingFG\" srcintfrole=\"undefined\" dstip=172.20.0.1 dstintf=\"root\" dstintfrole=\"undefined\" srccountry=\"Reserved\" dstcountry=\"Reserved\" sessionid=63022913 proto=1 action=\"accept\" policyid=11 policytype=\"policy\" poluuid=\"fea21c48-3cf3-51f0-d0ad-93c57786013e\" policyname=\"Incoming AWS2GentingFG\" service=\"PING\" trandisp=\"noop\" app=\"PING\" duration=61 sentbyte=420 rcvdbyte=420 sentpkt=5 rcvdpkt=5 vpntype=\"ipsecvpn\""
+    },
+    "type": "unknown",
+    "severity": 3,
+    "timestamp": "2025-08-18T01:16:40.904Z",
+    "device": "unknown",
+    "threat_intel": null,
+    "id": "1755479800904"
+  },
+  {
+    "original": {
+      "Event Receive Time": "2025-06-19 17:34:33",
+      "Reporting IP": "172.20.0.1",
+      "Event Type": "FortiGate-traffic-allowed",
+      "Event Name": "Permitted traffic",
+      "Raw Event Log": "<13>date=2025-06-19 time=17:34:33 devname=\"EvvoTevvo\" devid=\"FG101FTK20008934\" eventtime=1750325673256356648 tz=\"+0800\" logid=\"0001000014\" type=\"traffic\" subtype=\"local\" level=\"notice\" vd=\"root\" srcip=172.31.27.236 identifier=13292 srcintf=\"AWS2GentingFG\" srcintfrole=\"undefined\" dstip=172.20.0.1 dstintf=\"root\" dstintfrole=\"undefined\" srccountry=\"Reserved\" dstcountry=\"Reserved\" sessionid=63022913 proto=1 action=\"accept\" policyid=11 policytype=\"policy\" poluuid=\"fea21c48-3cf3-51f0-d0ad-93c57786013e\" policyname=\"Incoming AWS2GentingFG\" service=\"PING\" trandisp=\"noop\" app=\"PING\" duration=61 sentbyte=420 rcvdbyte=420 sentpkt=5 rcvdpkt=5 vpntype=\"ipsecvpn\""
+    },
+    "type": "unknown",
+    "severity": 3,
+    "timestamp": "2025-08-18T01:16:43.745Z",
+    "device": "unknown",
+    "threat_intel": null,
+    "id": "1755479803745"
+  },
+  {
+    "original": {
+      "Event Receive Time": "2025-06-19 17:34:33",
+      "Reporting IP": "172.20.0.1",
+      "Event Type": "FortiGate-traffic-allowed",
+      "Event Name": "Permitted traffic",
+      "Raw Event Log": "<13>date=2025-06-19 time=17:34:33 devname=\"EvvoTevvo\" devid=\"FG101FTK20008934\" eventtime=1750325673256356648 tz=\"+0800\" logid=\"0001000014\" type=\"traffic\" subtype=\"local\" level=\"notice\" vd=\"root\" srcip=172.31.27.236 identifier=13292 srcintf=\"AWS2GentingFG\" srcintfrole=\"undefined\" dstip=172.20.0.1 dstintf=\"root\" dstintfrole=\"undefined\" srccountry=\"Reserved\" dstcountry=\"Reserved\" sessionid=63022913 proto=1 action=\"accept\" policyid=11 policytype=\"policy\" poluuid=\"fea21c48-3cf3-51f0-d0ad-93c57786013e\" policyname=\"Incoming AWS2GentingFG\" service=\"PING\" trandisp=\"noop\" app=\"PING\" duration=61 sentbyte=420 rcvdbyte=420 sentpkt=5 rcvdpkt=5 vpntype=\"ipsecvpn\""
+    },
+    "type": "unknown",
+    "severity": 3,
+    "timestamp": "2025-08-18T01:16:48.476Z",
+    "device": "unknown",
+    "threat_intel": null,
+    "id": "1755479808476"
+  },
+  {
+    "original": {
+      "Event Receive Time": "2025-06-19 17:34:33",
+      "Reporting IP": "172.20.0.1",
+      "Event Type": "FortiGate-traffic-allowed",
+      "Event Name": "Permitted traffic",
+      "Raw Event Log": "<13>date=2025-06-19 time=17:34:33 devname=\"EvvoTevvo\" devid=\"FG101FTK20008934\" eventtime=1750325673256356648 tz=\"+0800\" logid=\"0001000014\" type=\"traffic\" subtype=\"local\" level=\"notice\" vd=\"root\" srcip=172.31.27.236 identifier=13292 srcintf=\"AWS2GentingFG\" srcintfrole=\"undefined\" dstip=172.20.0.1 dstintf=\"root\" dstintfrole=\"undefined\" srccountry=\"Reserved\" dstcountry=\"Reserved\" sessionid=63022913 proto=1 action=\"accept\" policyid=11 policytype=\"policy\" poluuid=\"fea21c48-3cf3-51f0-d0ad-93c57786013e\" policyname=\"Incoming AWS2GentingFG\" service=\"PING\" trandisp=\"noop\" app=\"PING\" duration=61 sentbyte=420 rcvdbyte=420 sentpkt=5 rcvdpkt=5 vpntype=\"ipsecvpn\""
+    },
+    "type": "unknown",
+    "severity": 3,
+    "timestamp": "2025-08-18T01:16:56.303Z",
+    "device": "unknown",
+    "threat_intel": null,
+    "id": "1755479816303"
+  },
+  {
+    "original": {
+      "Event Receive Time": "2025-06-19 17:34:33",
+      "Reporting IP": "172.20.0.1",
+      "Event Type": "FortiGate-traffic-allowed",
+      "Event Name": "Permitted traffic",
+      "Raw Event Log": "<13>date=2025-06-19 time=17:34:33 devname=\"EvvoTevvo\" devid=\"FG101FTK20008934\" eventtime=1750325673256356648 tz=\"+0800\" logid=\"0001000014\" type=\"traffic\" subtype=\"local\" level=\"notice\" vd=\"root\" srcip=172.31.27.236 identifier=13292 srcintf=\"AWS2GentingFG\" srcintfrole=\"undefined\" dstip=172.20.0.1 dstintf=\"root\" dstintfrole=\"undefined\" srccountry=\"Reserved\" dstcountry=\"Reserved\" sessionid=63022913 proto=1 action=\"accept\" policyid=11 policytype=\"policy\" poluuid=\"fea21c48-3cf3-51f0-d0ad-93c57786013e\" policyname=\"Incoming AWS2GentingFG\" service=\"PING\" trandisp=\"noop\" app=\"PING\" duration=61 sentbyte=420 rcvdbyte=420 sentpkt=5 rcvdpkt=5 vpntype=\"ipsecvpn\""
+    },
+    "type": "unknown",
+    "severity": 3,
+    "timestamp": "2025-08-18T01:17:10.303Z",
+    "device": "unknown",
+    "threat_intel": null,
+    "id": "1755479830303"
+  },
+  {
+    "original": {
+      "Event Receive Time": "2025-06-19 17:34:33",
+      "Reporting IP": "172.20.0.1",
+      "Event Type": "FortiGate-traffic-allowed",
+      "Event Name": "Permitted traffic",
+      "Raw Event Log": "<13>date=2025-06-19 time=17:34:33 devname=\"EvvoTevvo\" devid=\"FG101FTK20008934\" eventtime=1750325673256356648 tz=\"+0800\" logid=\"0001000014\" type=\"traffic\" subtype=\"local\" level=\"notice\" vd=\"root\" srcip=172.31.27.236 identifier=13292 srcintf=\"AWS2GentingFG\" srcintfrole=\"undefined\" dstip=172.20.0.1 dstintf=\"root\" dstintfrole=\"undefined\" srccountry=\"Reserved\" dstcountry=\"Reserved\" sessionid=63022913 proto=1 action=\"accept\" policyid=11 policytype=\"policy\" poluuid=\"fea21c48-3cf3-51f0-d0ad-93c57786013e\" policyname=\"Incoming AWS2GentingFG\" service=\"PING\" trandisp=\"noop\" app=\"PING\" duration=61 sentbyte=420 rcvdbyte=420 sentpkt=5 rcvdpkt=5 vpntype=\"ipsecvpn\""
+    },
+    "type": "unknown",
+    "severity": 3,
+    "timestamp": "2025-08-18T01:17:37.247Z",
+    "device": "unknown",
+    "threat_intel": null,
+    "id": "1755479857247"
+  },
+  {
+    "original": {
+      "Event Receive Time": "2025-06-19 17:34:33",
+      "Reporting IP": "172.20.0.1",
+      "Event Type": "FortiGate-traffic-allowed",
+      "Event Name": "Permitted traffic",
+      "Raw Event Log": "<13>date=2025-06-19 time=17:34:33 devname=\"EvvoTevvo\" devid=\"FG101FTK20008934\" eventtime=1750325673256356648 tz=\"+0800\" logid=\"0001000014\" type=\"traffic\" subtype=\"local\" level=\"notice\" vd=\"root\" srcip=172.31.27.236 identifier=13292 srcintf=\"AWS2GentingFG\" srcintfrole=\"undefined\" dstip=172.20.0.1 dstintf=\"root\" dstintfrole=\"undefined\" srccountry=\"Reserved\" dstcountry=\"Reserved\" sessionid=63022913 proto=1 action=\"accept\" policyid=11 policytype=\"policy\" poluuid=\"fea21c48-3cf3-51f0-d0ad-93c57786013e\" policyname=\"Incoming AWS2GentingFG\" service=\"PING\" trandisp=\"noop\" app=\"PING\" duration=61 sentbyte=420 rcvdbyte=420 sentpkt=5 rcvdpkt=5 vpntype=\"ipsecvpn\""
+    },
+    "type": "unknown",
+    "severity": 3,
+    "timestamp": "2025-08-18T01:18:29.989Z",
+    "device": "unknown",
+    "threat_intel": null,
+    "id": "1755479909989"
+  },
+  {
+    "original": {
+      "Event Receive Time": "2025-06-19 17:34:33",
+      "Reporting IP": "172.20.0.1",
+      "Event Type": "FortiGate-traffic-allowed",
+      "Event Name": "Permitted traffic",
+      "Raw Event Log": "<13>date=2025-06-19 time=17:34:33 devname=\"EvvoTevvo\" devid=\"FG101FTK20008934\" eventtime=1750325673256356648 tz=\"+0800\" logid=\"0001000014\" type=\"traffic\" subtype=\"local\" level=\"notice\" vd=\"root\" srcip=172.31.27.236 identifier=13292 srcintf=\"AWS2GentingFG\" srcintfrole=\"undefined\" dstip=172.20.0.1 dstintf=\"root\" dstintfrole=\"undefined\" srccountry=\"Reserved\" dstcountry=\"Reserved\" sessionid=63022913 proto=1 action=\"accept\" policyid=11 policytype=\"policy\" poluuid=\"fea21c48-3cf3-51f0-d0ad-93c57786013e\" policyname=\"Incoming AWS2GentingFG\" service=\"PING\" trandisp=\"noop\" app=\"PING\" duration=61 sentbyte=420 rcvdbyte=420 sentpkt=5 rcvdpkt=5 vpntype=\"ipsecvpn\""
+    },
+    "type": "unknown",
+    "severity": 3,
+    "timestamp": "2025-08-18T01:19:31.201Z",
+    "device": "unknown",
+    "threat_intel": null,
+    "id": "1755479971201"
+  },
+  {
+    "original": {
+      "Event Receive Time": "2025-06-19 17:34:33",
+      "Reporting IP": "172.20.0.1",
+      "Event Type": "FortiGate-traffic-allowed",
+      "Event Name": "Permitted traffic",
+      "Raw Event Log": "<13>date=2025-06-19 time=17:34:33 devname=\"EvvoTevvo\" devid=\"FG101FTK20008934\" eventtime=1750325673256356648 tz=\"+0800\" logid=\"0001000014\" type=\"traffic\" subtype=\"local\" level=\"notice\" vd=\"root\" srcip=172.31.27.236 identifier=13292 srcintf=\"AWS2GentingFG\" srcintfrole=\"undefined\" dstip=172.20.0.1 dstintf=\"root\" dstintfrole=\"undefined\" srccountry=\"Reserved\" dstcountry=\"Reserved\" sessionid=63022913 proto=1 action=\"accept\" policyid=11 policytype=\"policy\" poluuid=\"fea21c48-3cf3-51f0-d0ad-93c57786013e\" policyname=\"Incoming AWS2GentingFG\" service=\"PING\" trandisp=\"noop\" app=\"PING\" duration=61 sentbyte=420 rcvdbyte=420 sentpkt=5 rcvdpkt=5 vpntype=\"ipsecvpn\""
+    },
+    "type": "unknown",
+    "severity": 3,
+    "timestamp": "2025-08-18T01:20:32.767Z",
+    "device": "unknown",
+    "threat_intel": null,
+    "id": "1755480032767"
+  },
+  {
+    "original": {
+      "Event Receive Time": "2025-06-19 17:34:33",
+      "Reporting IP": "172.20.0.1",
+      "Event Type": "FortiGate-traffic-allowed",
+      "Event Name": "Permitted traffic",
+      "Raw Event Log": "<13>date=2025-06-19 time=17:34:33 devname=\"EvvoTevvo\" devid=\"FG101FTK20008934\" eventtime=1750325673256356648 tz=\"+0800\" logid=\"0001000014\" type=\"traffic\" subtype=\"local\" level=\"notice\" vd=\"root\" srcip=172.31.27.236 identifier=13292 srcintf=\"AWS2GentingFG\" srcintfrole=\"undefined\" dstip=172.20.0.1 dstintf=\"root\" dstintfrole=\"undefined\" srccountry=\"Reserved\" dstcountry=\"Reserved\" sessionid=63022913 proto=1 action=\"accept\" policyid=11 policytype=\"policy\" poluuid=\"fea21c48-3cf3-51f0-d0ad-93c57786013e\" policyname=\"Incoming AWS2GentingFG\" service=\"PING\" trandisp=\"noop\" app=\"PING\" duration=61 sentbyte=420 rcvdbyte=420 sentpkt=5 rcvdpkt=5 vpntype=\"ipsecvpn\""
+    },
+    "type": "unknown",
+    "severity": 3,
+    "timestamp": "2025-08-18T01:21:34.078Z",
+    "device": "unknown",
+    "threat_intel": null,
+    "id": "1755480094078"
+  },
+  {
+    "original": {
+      "Event Receive Time": "2025-06-19 17:34:33",
+      "Reporting IP": "172.20.0.1",
+      "Event Type": "FortiGate-traffic-allowed",
+      "Event Name": "Permitted traffic",
+      "Raw Event Log": "<13>date=2025-06-19 time=17:34:33 devname=\"EvvoTevvo\" devid=\"FG101FTK20008934\" eventtime=1750325673256356648 tz=\"+0800\" logid=\"0001000014\" type=\"traffic\" subtype=\"local\" level=\"notice\" vd=\"root\" srcip=172.31.27.236 identifier=13292 srcintf=\"AWS2GentingFG\" srcintfrole=\"undefined\" dstip=172.20.0.1 dstintf=\"root\" dstintfrole=\"undefined\" srccountry=\"Reserved\" dstcountry=\"Reserved\" sessionid=63022913 proto=1 action=\"accept\" policyid=11 policytype=\"policy\" poluuid=\"fea21c48-3cf3-51f0-d0ad-93c57786013e\" policyname=\"Incoming AWS2GentingFG\" service=\"PING\" trandisp=\"noop\" app=\"PING\" duration=61 sentbyte=420 rcvdbyte=420 sentpkt=5 rcvdpkt=5 vpntype=\"ipsecvpn\""
+    },
+    "type": "unknown",
+    "severity": 3,
+    "timestamp": "2025-08-18T01:22:35.228Z",
+    "device": "unknown",
+    "threat_intel": null,
+    "id": "1755480155228"
+  },
+  {
+    "original": {
+      "Event Receive Time": "2025-06-19 17:34:33",
+      "Reporting IP": "172.20.0.1",
+      "Event Type": "FortiGate-traffic-allowed",
+      "Event Name": "Permitted traffic",
+      "Raw Event Log": "<13>date=2025-06-19 time=17:34:33 devname=\"EvvoTevvo\" devid=\"FG101FTK20008934\" eventtime=1750325673256356648 tz=\"+0800\" logid=\"0001000014\" type=\"traffic\" subtype=\"local\" level=\"notice\" vd=\"root\" srcip=172.31.27.236 identifier=13292 srcintf=\"AWS2GentingFG\" srcintfrole=\"undefined\" dstip=172.20.0.1 dstintf=\"root\" dstintfrole=\"undefined\" srccountry=\"Reserved\" dstcountry=\"Reserved\" sessionid=63022913 proto=1 action=\"accept\" policyid=11 policytype=\"policy\" poluuid=\"fea21c48-3cf3-51f0-d0ad-93c57786013e\" policyname=\"Incoming AWS2GentingFG\" service=\"PING\" trandisp=\"noop\" app=\"PING\" duration=61 sentbyte=420 rcvdbyte=420 sentpkt=5 rcvdpkt=5 vpntype=\"ipsecvpn\""
+    },
+    "type": "unknown",
+    "severity": 3,
+    "timestamp": "2025-08-18T01:22:43.744Z",
+    "device": "unknown",
+    "threat_intel": null,
+    "id": "1755480163744"
+  },
+  {
+    "original": {
+      "Event Receive Time": "2025-06-19 17:34:33",
+      "Reporting IP": "172.20.0.1",
+      "Event Type": "FortiGate-traffic-allowed",
+      "Event Name": "Permitted traffic",
+      "Raw Event Log": "<13>date=2025-06-19 time=17:34:33 devname=\"EvvoTevvo\" devid=\"FG101FTK20008934\" eventtime=1750325673256356648 tz=\"+0800\" logid=\"0001000014\" type=\"traffic\" subtype=\"local\" level=\"notice\" vd=\"root\" srcip=172.31.27.236 identifier=13292 srcintf=\"AWS2GentingFG\" srcintfrole=\"undefined\" dstip=172.20.0.1 dstintf=\"root\" dstintfrole=\"undefined\" srccountry=\"Reserved\" dstcountry=\"Reserved\" sessionid=63022913 proto=1 action=\"accept\" policyid=11 policytype=\"policy\" poluuid=\"fea21c48-3cf3-51f0-d0ad-93c57786013e\" policyname=\"Incoming AWS2GentingFG\" service=\"PING\" trandisp=\"noop\" app=\"PING\" duration=61 sentbyte=420 rcvdbyte=420 sentpkt=5 rcvdpkt=5 vpntype=\"ipsecvpn\""
+    },
+    "type": "unknown",
+    "severity": 3,
+    "timestamp": "2025-08-18T01:22:45.054Z",
+    "device": "unknown",
+    "threat_intel": null,
+    "id": "1755480165054"
+  },
+  {
+    "original": {
+      "Event Receive Time": "2025-06-19 17:34:33",
+      "Reporting IP": "172.20.0.1",
+      "Event Type": "FortiGate-traffic-allowed",
+      "Event Name": "Permitted traffic",
+      "Raw Event Log": "<13>date=2025-06-19 time=17:34:33 devname=\"EvvoTevvo\" devid=\"FG101FTK20008934\" eventtime=1750325673256356648 tz=\"+0800\" logid=\"0001000014\" type=\"traffic\" subtype=\"local\" level=\"notice\" vd=\"root\" srcip=172.31.27.236 identifier=13292 srcintf=\"AWS2GentingFG\" srcintfrole=\"undefined\" dstip=172.20.0.1 dstintf=\"root\" dstintfrole=\"undefined\" srccountry=\"Reserved\" dstcountry=\"Reserved\" sessionid=63022913 proto=1 action=\"accept\" policyid=11 policytype=\"policy\" poluuid=\"fea21c48-3cf3-51f0-d0ad-93c57786013e\" policyname=\"Incoming AWS2GentingFG\" service=\"PING\" trandisp=\"noop\" app=\"PING\" duration=61 sentbyte=420 rcvdbyte=420 sentpkt=5 rcvdpkt=5 vpntype=\"ipsecvpn\""
+    },
+    "type": "unknown",
+    "severity": 3,
+    "timestamp": "2025-08-18T01:22:46.454Z",
+    "device": "unknown",
+    "threat_intel": null,
+    "id": "1755480166454"
+  },
+  {
+    "original": {
+      "Event Receive Time": "2025-06-19 17:34:33",
+      "Reporting IP": "172.20.0.1",
+      "Event Type": "FortiGate-traffic-allowed",
+      "Event Name": "Permitted traffic",
+      "Raw Event Log": "<13>date=2025-06-19 time=17:34:33 devname=\"EvvoTevvo\" devid=\"FG101FTK20008934\" eventtime=1750325673256356648 tz=\"+0800\" logid=\"0001000014\" type=\"traffic\" subtype=\"local\" level=\"notice\" vd=\"root\" srcip=172.31.27.236 identifier=13292 srcintf=\"AWS2GentingFG\" srcintfrole=\"undefined\" dstip=172.20.0.1 dstintf=\"root\" dstintfrole=\"undefined\" srccountry=\"Reserved\" dstcountry=\"Reserved\" sessionid=63022913 proto=1 action=\"accept\" policyid=11 policytype=\"policy\" poluuid=\"fea21c48-3cf3-51f0-d0ad-93c57786013e\" policyname=\"Incoming AWS2GentingFG\" service=\"PING\" trandisp=\"noop\" app=\"PING\" duration=61 sentbyte=420 rcvdbyte=420 sentpkt=5 rcvdpkt=5 vpntype=\"ipsecvpn\""
+    },
+    "type": "unknown",
+    "severity": 3,
+    "timestamp": "2025-08-18T01:22:47.951Z",
+    "device": "unknown",
+    "threat_intel": null,
+    "id": "1755480167951"
+  },
+  {
+    "original": {
+      "Event Receive Time": "2025-06-19 17:34:33",
+      "Reporting IP": "172.20.0.1",
+      "Event Type": "FortiGate-traffic-allowed",
+      "Event Name": "Permitted traffic",
+      "Raw Event Log": "<13>date=2025-06-19 time=17:34:33 devname=\"EvvoTevvo\" devid=\"FG101FTK20008934\" eventtime=1750325673256356648 tz=\"+0800\" logid=\"0001000014\" type=\"traffic\" subtype=\"local\" level=\"notice\" vd=\"root\" srcip=172.31.27.236 identifier=13292 srcintf=\"AWS2GentingFG\" srcintfrole=\"undefined\" dstip=172.20.0.1 dstintf=\"root\" dstintfrole=\"undefined\" srccountry=\"Reserved\" dstcountry=\"Reserved\" sessionid=63022913 proto=1 action=\"accept\" policyid=11 policytype=\"policy\" poluuid=\"fea21c48-3cf3-51f0-d0ad-93c57786013e\" policyname=\"Incoming AWS2GentingFG\" service=\"PING\" trandisp=\"noop\" app=\"PING\" duration=61 sentbyte=420 rcvdbyte=420 sentpkt=5 rcvdpkt=5 vpntype=\"ipsecvpn\""
+    },
+    "type": "unknown",
+    "severity": 3,
+    "timestamp": "2025-08-18T01:22:49.937Z",
+    "device": "unknown",
+    "threat_intel": null,
+    "id": "1755480169937"
+  },
+  {
+    "original": {
+      "Event Receive Time": "2025-06-19 17:34:33",
+      "Reporting IP": "172.20.0.1",
+      "Event Type": "FortiGate-traffic-allowed",
+      "Event Name": "Permitted traffic",
+      "Raw Event Log": "<13>date=2025-06-19 time=17:34:33 devname=\"EvvoTevvo\" devid=\"FG101FTK20008934\" eventtime=1750325673256356648 tz=\"+0800\" logid=\"0001000014\" type=\"traffic\" subtype=\"local\" level=\"notice\" vd=\"root\" srcip=172.31.27.236 identifier=13292 srcintf=\"AWS2GentingFG\" srcintfrole=\"undefined\" dstip=172.20.0.1 dstintf=\"root\" dstintfrole=\"undefined\" srccountry=\"Reserved\" dstcountry=\"Reserved\" sessionid=63022913 proto=1 action=\"accept\" policyid=11 policytype=\"policy\" poluuid=\"fea21c48-3cf3-51f0-d0ad-93c57786013e\" policyname=\"Incoming AWS2GentingFG\" service=\"PING\" trandisp=\"noop\" app=\"PING\" duration=61 sentbyte=420 rcvdbyte=420 sentpkt=5 rcvdpkt=5 vpntype=\"ipsecvpn\""
+    },
+    "type": "unknown",
+    "severity": 3,
+    "timestamp": "2025-08-18T01:22:52.600Z",
+    "device": "unknown",
+    "threat_intel": null,
+    "id": "1755480172600"
+  },
+  {
+    "original": {
+      "Event Receive Time": "2025-06-19 17:34:33",
+      "Reporting IP": "172.20.0.1",
+      "Event Type": "FortiGate-traffic-allowed",
+      "Event Name": "Permitted traffic",
+      "Raw Event Log": "<13>date=2025-06-19 time=17:34:33 devname=\"EvvoTevvo\" devid=\"FG101FTK20008934\" eventtime=1750325673256356648 tz=\"+0800\" logid=\"0001000014\" type=\"traffic\" subtype=\"local\" level=\"notice\" vd=\"root\" srcip=172.31.27.236 identifier=13292 srcintf=\"AWS2GentingFG\" srcintfrole=\"undefined\" dstip=172.20.0.1 dstintf=\"root\" dstintfrole=\"undefined\" srccountry=\"Reserved\" dstcountry=\"Reserved\" sessionid=63022913 proto=1 action=\"accept\" policyid=11 policytype=\"policy\" poluuid=\"fea21c48-3cf3-51f0-d0ad-93c57786013e\" policyname=\"Incoming AWS2GentingFG\" service=\"PING\" trandisp=\"noop\" app=\"PING\" duration=61 sentbyte=420 rcvdbyte=420 sentpkt=5 rcvdpkt=5 vpntype=\"ipsecvpn\""
+    },
+    "type": "unknown",
+    "severity": 3,
+    "timestamp": "2025-08-18T01:22:57.383Z",
+    "device": "unknown",
+    "threat_intel": null,
+    "id": "1755480177383"
+  },
+  {
+    "original": {
+      "Event Receive Time": "2025-06-19 17:34:33",
+      "Reporting IP": "172.20.0.1",
+      "Event Type": "FortiGate-traffic-allowed",
+      "Event Name": "Permitted traffic",
+      "Raw Event Log": "<13>date=2025-06-19 time=17:34:33 devname=\"EvvoTevvo\" devid=\"FG101FTK20008934\" eventtime=1750325673256356648 tz=\"+0800\" logid=\"0001000014\" type=\"traffic\" subtype=\"local\" level=\"notice\" vd=\"root\" srcip=172.31.27.236 identifier=13292 srcintf=\"AWS2GentingFG\" srcintfrole=\"undefined\" dstip=172.20.0.1 dstintf=\"root\" dstintfrole=\"undefined\" srccountry=\"Reserved\" dstcountry=\"Reserved\" sessionid=63022913 proto=1 action=\"accept\" policyid=11 policytype=\"policy\" poluuid=\"fea21c48-3cf3-51f0-d0ad-93c57786013e\" policyname=\"Incoming AWS2GentingFG\" service=\"PING\" trandisp=\"noop\" app=\"PING\" duration=61 sentbyte=420 rcvdbyte=420 sentpkt=5 rcvdpkt=5 vpntype=\"ipsecvpn\""
+    },
+    "type": "unknown",
+    "severity": 3,
+    "timestamp": "2025-08-18T01:23:05.057Z",
+    "device": "unknown",
+    "threat_intel": null,
+    "id": "1755480185057"
+  },
+  {
+    "original": {
+      "Event Receive Time": "2025-06-19 17:34:33",
+      "Reporting IP": "172.20.0.1",
+      "Event Type": "FortiGate-traffic-allowed",
+      "Event Name": "Permitted traffic",
+      "Raw Event Log": "<13>date=2025-06-19 time=17:34:33 devname=\"EvvoTevvo\" devid=\"FG101FTK20008934\" eventtime=1750325673256356648 tz=\"+0800\" logid=\"0001000014\" type=\"traffic\" subtype=\"local\" level=\"notice\" vd=\"root\" srcip=172.31.27.236 identifier=13292 srcintf=\"AWS2GentingFG\" srcintfrole=\"undefined\" dstip=172.20.0.1 dstintf=\"root\" dstintfrole=\"undefined\" srccountry=\"Reserved\" dstcountry=\"Reserved\" sessionid=63022913 proto=1 action=\"accept\" policyid=11 policytype=\"policy\" poluuid=\"fea21c48-3cf3-51f0-d0ad-93c57786013e\" policyname=\"Incoming AWS2GentingFG\" service=\"PING\" trandisp=\"noop\" app=\"PING\" duration=61 sentbyte=420 rcvdbyte=420 sentpkt=5 rcvdpkt=5 vpntype=\"ipsecvpn\""
+    },
+    "type": "unknown",
+    "severity": 3,
+    "timestamp": "2025-08-18T01:23:19.323Z",
+    "device": "unknown",
+    "threat_intel": null,
+    "id": "1755480199323"
+  },
+  {
+    "original": {
+      "Event Receive Time": "2025-06-19 17:34:33",
+      "Reporting IP": "172.20.0.1",
+      "Event Type": "FortiGate-traffic-allowed",
+      "Event Name": "Permitted traffic",
+      "Raw Event Log": "<13>date=2025-06-19 time=17:34:33 devname=\"EvvoTevvo\" devid=\"FG101FTK20008934\" eventtime=1750325673256356648 tz=\"+0800\" logid=\"0001000014\" type=\"traffic\" subtype=\"local\" level=\"notice\" vd=\"root\" srcip=172.31.27.236 identifier=13292 srcintf=\"AWS2GentingFG\" srcintfrole=\"undefined\" dstip=172.20.0.1 dstintf=\"root\" dstintfrole=\"undefined\" srccountry=\"Reserved\" dstcountry=\"Reserved\" sessionid=63022913 proto=1 action=\"accept\" policyid=11 policytype=\"policy\" poluuid=\"fea21c48-3cf3-51f0-d0ad-93c57786013e\" policyname=\"Incoming AWS2GentingFG\" service=\"PING\" trandisp=\"noop\" app=\"PING\" duration=61 sentbyte=420 rcvdbyte=420 sentpkt=5 rcvdpkt=5 vpntype=\"ipsecvpn\""
+    },
+    "type": "unknown",
+    "severity": 3,
+    "timestamp": "2025-08-18T01:23:45.943Z",
+    "device": "unknown",
+    "threat_intel": null,
+    "id": "1755480225943"
+  },
+  {
+    "original": {
+      "Event Receive Time": "2025-06-19 17:34:33",
+      "Reporting IP": "172.20.0.1",
+      "Event Type": "FortiGate-traffic-allowed",
+      "Event Name": "Permitted traffic",
+      "Raw Event Log": "<13>date=2025-06-19 time=17:34:33 devname=\"EvvoTevvo\" devid=\"FG101FTK20008934\" eventtime=1750325673256356648 tz=\"+0800\" logid=\"0001000014\" type=\"traffic\" subtype=\"local\" level=\"notice\" vd=\"root\" srcip=172.31.27.236 identifier=13292 srcintf=\"AWS2GentingFG\" srcintfrole=\"undefined\" dstip=172.20.0.1 dstintf=\"root\" dstintfrole=\"undefined\" srccountry=\"Reserved\" dstcountry=\"Reserved\" sessionid=63022913 proto=1 action=\"accept\" policyid=11 policytype=\"policy\" poluuid=\"fea21c48-3cf3-51f0-d0ad-93c57786013e\" policyname=\"Incoming AWS2GentingFG\" service=\"PING\" trandisp=\"noop\" app=\"PING\" duration=61 sentbyte=420 rcvdbyte=420 sentpkt=5 rcvdpkt=5 vpntype=\"ipsecvpn\""
+    },
+    "type": "unknown",
+    "severity": 3,
+    "timestamp": "2025-08-18T01:24:38.188Z",
+    "device": "unknown",
+    "threat_intel": null,
+    "id": "1755480278188"
+  },
+  {
+    "original": {
+      "Event Receive Time": "2025-06-19 17:34:33",
+      "Reporting IP": "172.20.0.1",
+      "Event Type": "FortiGate-traffic-allowed",
+      "Event Name": "Permitted traffic",
+      "Raw Event Log": "<13>date=2025-06-19 time=17:34:33 devname=\"EvvoTevvo\" devid=\"FG101FTK20008934\" eventtime=1750325673256356648 tz=\"+0800\" logid=\"0001000014\" type=\"traffic\" subtype=\"local\" level=\"notice\" vd=\"root\" srcip=172.31.27.236 identifier=13292 srcintf=\"AWS2GentingFG\" srcintfrole=\"undefined\" dstip=172.20.0.1 dstintf=\"root\" dstintfrole=\"undefined\" srccountry=\"Reserved\" dstcountry=\"Reserved\" sessionid=63022913 proto=1 action=\"accept\" policyid=11 policytype=\"policy\" poluuid=\"fea21c48-3cf3-51f0-d0ad-93c57786013e\" policyname=\"Incoming AWS2GentingFG\" service=\"PING\" trandisp=\"noop\" app=\"PING\" duration=61 sentbyte=420 rcvdbyte=420 sentpkt=5 rcvdpkt=5 vpntype=\"ipsecvpn\""
+    },
+    "type": "unknown",
+    "severity": 3,
+    "timestamp": "2025-08-18T01:25:39.286Z",
+    "device": "unknown",
+    "threat_intel": null,
+    "id": "1755480339286"
+  },
+  {
+    "original": {
+      "Event Receive Time": "2025-06-19 17:34:33",
+      "Reporting IP": "172.20.0.1",
+      "Event Type": "FortiGate-traffic-allowed",
+      "Event Name": "Permitted traffic",
+      "Raw Event Log": "<13>date=2025-06-19 time=17:34:33 devname=\"EvvoTevvo\" devid=\"FG101FTK20008934\" eventtime=1750325673256356648 tz=\"+0800\" logid=\"0001000014\" type=\"traffic\" subtype=\"local\" level=\"notice\" vd=\"root\" srcip=172.31.27.236 identifier=13292 srcintf=\"AWS2GentingFG\" srcintfrole=\"undefined\" dstip=172.20.0.1 dstintf=\"root\" dstintfrole=\"undefined\" srccountry=\"Reserved\" dstcountry=\"Reserved\" sessionid=63022913 proto=1 action=\"accept\" policyid=11 policytype=\"policy\" poluuid=\"fea21c48-3cf3-51f0-d0ad-93c57786013e\" policyname=\"Incoming AWS2GentingFG\" service=\"PING\" trandisp=\"noop\" app=\"PING\" duration=61 sentbyte=420 rcvdbyte=420 sentpkt=5 rcvdpkt=5 vpntype=\"ipsecvpn\""
+    },
+    "type": "unknown",
+    "severity": 3,
+    "timestamp": "2025-08-18T01:26:40.285Z",
+    "device": "unknown",
+    "threat_intel": null,
+    "id": "1755480400285"
+  },
+  {
+    "original": {
+      "Event Receive Time": "2025-06-19 17:34:33",
+      "Reporting IP": "172.20.0.1",
+      "Event Type": "FortiGate-traffic-allowed",
+      "Event Name": "Permitted traffic",
+      "Raw Event Log": "<13>date=2025-06-19 time=17:34:33 devname=\"EvvoTevvo\" devid=\"FG101FTK20008934\" eventtime=1750325673256356648 tz=\"+0800\" logid=\"0001000014\" type=\"traffic\" subtype=\"local\" level=\"notice\" vd=\"root\" srcip=172.31.27.236 identifier=13292 srcintf=\"AWS2GentingFG\" srcintfrole=\"undefined\" dstip=172.20.0.1 dstintf=\"root\" dstintfrole=\"undefined\" srccountry=\"Reserved\" dstcountry=\"Reserved\" sessionid=63022913 proto=1 action=\"accept\" policyid=11 policytype=\"policy\" poluuid=\"fea21c48-3cf3-51f0-d0ad-93c57786013e\" policyname=\"Incoming AWS2GentingFG\" service=\"PING\" trandisp=\"noop\" app=\"PING\" duration=61 sentbyte=420 rcvdbyte=420 sentpkt=5 rcvdpkt=5 vpntype=\"ipsecvpn\""
+    },
+    "type": "unknown",
+    "severity": 3,
+    "timestamp": "2025-08-18T01:27:41.955Z",
+    "device": "unknown",
+    "threat_intel": null,
+    "id": "1755480461955"
+  },
+  {
+    "original": {
+      "Event Receive Time": "2025-06-19 17:34:33",
+      "Reporting IP": "172.20.0.1",
+      "Event Type": "FortiGate-traffic-allowed",
+      "Event Name": "Permitted traffic",
+      "Raw Event Log": "<13>date=2025-06-19 time=17:34:33 devname=\"EvvoTevvo\" devid=\"FG101FTK20008934\" eventtime=1750325673256356648 tz=\"+0800\" logid=\"0001000014\" type=\"traffic\" subtype=\"local\" level=\"notice\" vd=\"root\" srcip=172.31.27.236 identifier=13292 srcintf=\"AWS2GentingFG\" srcintfrole=\"undefined\" dstip=172.20.0.1 dstintf=\"root\" dstintfrole=\"undefined\" srccountry=\"Reserved\" dstcountry=\"Reserved\" sessionid=63022913 proto=1 action=\"accept\" policyid=11 policytype=\"policy\" poluuid=\"fea21c48-3cf3-51f0-d0ad-93c57786013e\" policyname=\"Incoming AWS2GentingFG\" service=\"PING\" trandisp=\"noop\" app=\"PING\" duration=61 sentbyte=420 rcvdbyte=420 sentpkt=5 rcvdpkt=5 vpntype=\"ipsecvpn\""
+    },
+    "type": "unknown",
+    "severity": 3,
+    "timestamp": "2025-08-18T01:28:43.435Z",
+    "device": "unknown",
+    "threat_intel": null,
+    "id": "1755480523435"
+  },
+  {
+    "original": {
+      "Event Receive Time": "2025-06-19 17:34:33",
+      "Reporting IP": "172.20.0.1",
+      "Event Type": "FortiGate-traffic-allowed",
+      "Event Name": "Permitted traffic",
+      "Raw Event Log": "<13>date=2025-06-19 time=17:34:33 devname=\"EvvoTevvo\" devid=\"FG101FTK20008934\" eventtime=1750325673256356648 tz=\"+0800\" logid=\"0001000014\" type=\"traffic\" subtype=\"local\" level=\"notice\" vd=\"root\" srcip=172.31.27.236 identifier=13292 srcintf=\"AWS2GentingFG\" srcintfrole=\"undefined\" dstip=172.20.0.1 dstintf=\"root\" dstintfrole=\"undefined\" srccountry=\"Reserved\" dstcountry=\"Reserved\" sessionid=63022913 proto=1 action=\"accept\" policyid=11 policytype=\"policy\" poluuid=\"fea21c48-3cf3-51f0-d0ad-93c57786013e\" policyname=\"Incoming AWS2GentingFG\" service=\"PING\" trandisp=\"noop\" app=\"PING\" duration=61 sentbyte=420 rcvdbyte=420 sentpkt=5 rcvdpkt=5 vpntype=\"ipsecvpn\""
+    },
+    "type": "unknown",
+    "severity": 3,
+    "timestamp": "2025-08-18T01:29:45.285Z",
+    "device": "unknown",
+    "threat_intel": null,
+    "id": "1755480585285"
+  },
+  {
+    "original": {
+      "Event Receive Time": "2025-06-19 17:34:33",
+      "Reporting IP": "172.20.0.1",
+      "Event Type": "FortiGate-traffic-allowed",
+      "Event Name": "Permitted traffic",
+      "Raw Event Log": "<13>date=2025-06-19 time=17:34:33 devname=\"EvvoTevvo\" devid=\"FG101FTK20008934\" eventtime=1750325673256356648 tz=\"+0800\" logid=\"0001000014\" type=\"traffic\" subtype=\"local\" level=\"notice\" vd=\"root\" srcip=172.31.27.236 identifier=13292 srcintf=\"AWS2GentingFG\" srcintfrole=\"undefined\" dstip=172.20.0.1 dstintf=\"root\" dstintfrole=\"undefined\" srccountry=\"Reserved\" dstcountry=\"Reserved\" sessionid=63022913 proto=1 action=\"accept\" policyid=11 policytype=\"policy\" poluuid=\"fea21c48-3cf3-51f0-d0ad-93c57786013e\" policyname=\"Incoming AWS2GentingFG\" service=\"PING\" trandisp=\"noop\" app=\"PING\" duration=61 sentbyte=420 rcvdbyte=420 sentpkt=5 rcvdpkt=5 vpntype=\"ipsecvpn\""
+    },
+    "type": "unknown",
+    "severity": 3,
+    "timestamp": "2025-08-18T01:30:46.537Z",
+    "device": "unknown",
+    "threat_intel": null,
+    "id": "1755480646537"
+  },
+  {
+    "original": {
+      "Event Receive Time": "2025-06-19 17:34:33",
+      "Reporting IP": "172.20.0.1",
+      "Event Type": "FortiGate-traffic-allowed",
+      "Event Name": "Permitted traffic",
+      "Raw Event Log": "<13>date=2025-06-19 time=17:34:33 devname=\"EvvoTevvo\" devid=\"FG101FTK20008934\" eventtime=1750325673256356648 tz=\"+0800\" logid=\"0001000014\" type=\"traffic\" subtype=\"local\" level=\"notice\" vd=\"root\" srcip=172.31.27.236 identifier=13292 srcintf=\"AWS2GentingFG\" srcintfrole=\"undefined\" dstip=172.20.0.1 dstintf=\"root\" dstintfrole=\"undefined\" srccountry=\"Reserved\" dstcountry=\"Reserved\" sessionid=63022913 proto=1 action=\"accept\" policyid=11 policytype=\"policy\" poluuid=\"fea21c48-3cf3-51f0-d0ad-93c57786013e\" policyname=\"Incoming AWS2GentingFG\" service=\"PING\" trandisp=\"noop\" app=\"PING\" duration=61 sentbyte=420 rcvdbyte=420 sentpkt=5 rcvdpkt=5 vpntype=\"ipsecvpn\""
+    },
+    "type": "unknown",
+    "severity": 3,
+    "timestamp": "2025-08-18T01:31:47.816Z",
+    "device": "unknown",
+    "threat_intel": null,
+    "id": "1755480707816"
+  },
+  {
+    "original": {
+      "Event Receive Time": "2025-06-19 17:34:33",
+      "Reporting IP": "172.20.0.1",
+      "Event Type": "FortiGate-traffic-allowed",
+      "Event Name": "Permitted traffic",
+      "Raw Event Log": "<13>date=2025-06-19 time=17:34:33 devname=\"EvvoTevvo\" devid=\"FG101FTK20008934\" eventtime=1750325673256356648 tz=\"+0800\" logid=\"0001000014\" type=\"traffic\" subtype=\"local\" level=\"notice\" vd=\"root\" srcip=172.31.27.236 identifier=13292 srcintf=\"AWS2GentingFG\" srcintfrole=\"undefined\" dstip=172.20.0.1 dstintf=\"root\" dstintfrole=\"undefined\" srccountry=\"Reserved\" dstcountry=\"Reserved\" sessionid=63022913 proto=1 action=\"accept\" policyid=11 policytype=\"policy\" poluuid=\"fea21c48-3cf3-51f0-d0ad-93c57786013e\" policyname=\"Incoming AWS2GentingFG\" service=\"PING\" trandisp=\"noop\" app=\"PING\" duration=61 sentbyte=420 rcvdbyte=420 sentpkt=5 rcvdpkt=5 vpntype=\"ipsecvpn\""
+    },
+    "type": "unknown",
+    "severity": 3,
+    "timestamp": "2025-08-18T01:32:48.965Z",
+    "device": "unknown",
+    "threat_intel": null,
+    "id": "1755480768965"
+  },
+  {
+    "original": {
+      "Event Receive Time": "2025-06-19 17:34:33",
+      "Reporting IP": "172.20.0.1",
+      "Event Type": "FortiGate-traffic-allowed",
+      "Event Name": "Permitted traffic",
+      "Raw Event Log": "<13>date=2025-06-19 time=17:34:33 devname=\"EvvoTevvo\" devid=\"FG101FTK20008934\" eventtime=1750325673256356648 tz=\"+0800\" logid=\"0001000014\" type=\"traffic\" subtype=\"local\" level=\"notice\" vd=\"root\" srcip=172.31.27.236 identifier=13292 srcintf=\"AWS2GentingFG\" srcintfrole=\"undefined\" dstip=172.20.0.1 dstintf=\"root\" dstintfrole=\"undefined\" srccountry=\"Reserved\" dstcountry=\"Reserved\" sessionid=63022913 proto=1 action=\"accept\" policyid=11 policytype=\"policy\" poluuid=\"fea21c48-3cf3-51f0-d0ad-93c57786013e\" policyname=\"Incoming AWS2GentingFG\" service=\"PING\" trandisp=\"noop\" app=\"PING\" duration=61 sentbyte=420 rcvdbyte=420 sentpkt=5 rcvdpkt=5 vpntype=\"ipsecvpn\""
+    },
+    "type": "unknown",
+    "severity": 3,
+    "timestamp": "2025-08-18T01:33:50.079Z",
+    "device": "unknown",
+    "threat_intel": null,
+    "id": "1755480830079"
+  },
+  {
+    "original": {
+      "Event Receive Time": "2025-06-19 17:34:33",
+      "Reporting IP": "172.20.0.1",
+      "Event Type": "FortiGate-traffic-allowed",
+      "Event Name": "Permitted traffic",
+      "Raw Event Log": "<13>date=2025-06-19 time=17:34:33 devname=\"EvvoTevvo\" devid=\"FG101FTK20008934\" eventtime=1750325673256356648 tz=\"+0800\" logid=\"0001000014\" type=\"traffic\" subtype=\"local\" level=\"notice\" vd=\"root\" srcip=172.31.27.236 identifier=13292 srcintf=\"AWS2GentingFG\" srcintfrole=\"undefined\" dstip=172.20.0.1 dstintf=\"root\" dstintfrole=\"undefined\" srccountry=\"Reserved\" dstcountry=\"Reserved\" sessionid=63022913 proto=1 action=\"accept\" policyid=11 policytype=\"policy\" poluuid=\"fea21c48-3cf3-51f0-d0ad-93c57786013e\" policyname=\"Incoming AWS2GentingFG\" service=\"PING\" trandisp=\"noop\" app=\"PING\" duration=61 sentbyte=420 rcvdbyte=420 sentpkt=5 rcvdpkt=5 vpntype=\"ipsecvpn\""
+    },
+    "type": "unknown",
+    "severity": 3,
+    "timestamp": "2025-08-18T01:34:51.371Z",
+    "device": "unknown",
+    "threat_intel": null,
+    "id": "1755480891371"
+  },
+  {
+    "original": {
+      "Event Receive Time": "2025-06-19 17:34:33",
+      "Reporting IP": "172.20.0.1",
+      "Event Type": "FortiGate-traffic-allowed",
+      "Event Name": "Permitted traffic",
+      "Raw Event Log": "<13>date=2025-06-19 time=17:34:33 devname=\"EvvoTevvo\" devid=\"FG101FTK20008934\" eventtime=1750325673256356648 tz=\"+0800\" logid=\"0001000014\" type=\"traffic\" subtype=\"local\" level=\"notice\" vd=\"root\" srcip=172.31.27.236 identifier=13292 srcintf=\"AWS2GentingFG\" srcintfrole=\"undefined\" dstip=172.20.0.1 dstintf=\"root\" dstintfrole=\"undefined\" srccountry=\"Reserved\" dstcountry=\"Reserved\" sessionid=63022913 proto=1 action=\"accept\" policyid=11 policytype=\"policy\" poluuid=\"fea21c48-3cf3-51f0-d0ad-93c57786013e\" policyname=\"Incoming AWS2GentingFG\" service=\"PING\" trandisp=\"noop\" app=\"PING\" duration=61 sentbyte=420 rcvdbyte=420 sentpkt=5 rcvdpkt=5 vpntype=\"ipsecvpn\""
+    },
+    "type": "unknown",
+    "severity": 3,
+    "timestamp": "2025-08-18T01:35:34.280Z",
+    "device": "unknown",
+    "threat_intel": null,
+    "id": "1755480934283"
+  },
+  {
+    "original": {
+      "Event Receive Time": "2025-06-19 17:34:33",
+      "Reporting IP": "172.20.0.1",
+      "Event Type": "FortiGate-traffic-allowed",
+      "Event Name": "Permitted traffic",
+      "Raw Event Log": "<13>date=2025-06-19 time=17:34:33 devname=\"EvvoTevvo\" devid=\"FG101FTK20008934\" eventtime=1750325673256356648 tz=\"+0800\" logid=\"0001000014\" type=\"traffic\" subtype=\"local\" level=\"notice\" vd=\"root\" srcip=172.31.27.236 identifier=13292 srcintf=\"AWS2GentingFG\" srcintfrole=\"undefined\" dstip=172.20.0.1 dstintf=\"root\" dstintfrole=\"undefined\" srccountry=\"Reserved\" dstcountry=\"Reserved\" sessionid=63022913 proto=1 action=\"accept\" policyid=11 policytype=\"policy\" poluuid=\"fea21c48-3cf3-51f0-d0ad-93c57786013e\" policyname=\"Incoming AWS2GentingFG\" service=\"PING\" trandisp=\"noop\" app=\"PING\" duration=61 sentbyte=420 rcvdbyte=420 sentpkt=5 rcvdpkt=5 vpntype=\"ipsecvpn\""
+    },
+    "type": "unknown",
+    "severity": 3,
+    "timestamp": "2025-08-18T01:35:52.756Z",
+    "device": "unknown",
+    "threat_intel": null,
+    "id": "1755480952756"
+  }
+]
