@@ -1,0 +1,1165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SOC Alert Analysis Tester with Log Parser</title>
+    <style>
+        :root {
+            --primary: #0d6efd;
+            --secondary: #6c757d;
+            --success: #198754;
+            --danger: #dc3545;
+            --warning: #ffc107;
+            --info: #0dcaf0;
+            --dark: #212529;
+            --light: #f8f9fa;
+            --bg-dark: #1a1d21;
+            --card-dark: #24272b;
+            --text-light: #e9ecef;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: #121416;
+            color: var(--text-light);
+            line-height: 1.6;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: var(--card-dark);
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        h1 {
+            color: var(--primary);
+            margin-bottom: 10px;
+        }
+        
+        .tabs {
+            display: flex;
+            margin-bottom: 20px;
+            background-color: var(--card-dark);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        
+        .tab {
+            padding: 15px 20px;
+            cursor: pointer;
+            flex: 1;
+            text-align: center;
+            transition: background-color 0.3s;
+        }
+        
+        .tab.active {
+            background-color: var(--primary);
+            font-weight: bold;
+        }
+        
+        .tab:hover:not(.active) {
+            background-color: #3a3f46;
+        }
+        
+        .ollama-status {
+            display: inline-block;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: bold;
+            margin: 15px 0;
+        }
+        
+        .offline {
+            background-color: var(--danger);
+            color: white;
+        }
+        
+        .online {
+            background-color: var(--success);
+            color: white;
+        }
+        
+        .dashboard {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        
+        @media (max-width: 900px) {
+            .dashboard {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .card {
+            background: var(--card-dark);
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+        
+        h2 {
+            color: var(--primary);
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #3a3f46;
+        }
+        
+        h3 {
+            color: var(--info);
+            margin: 15px 0;
+        }
+        
+        .alert-type {
+            margin-bottom: 20px;
+        }
+        
+        select, textarea, button, input {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 15px;
+            border-radius: 5px;
+            border: 1px solid #3a3f46;
+            background-color: #2d3035;
+            color: var(--text-light);
+        }
+        
+        textarea {
+            min-height: 200px;
+            font-family: monospace;
+            resize: vertical;
+            font-size: 14px;
+            line-height: 1.4;
+        }
+        
+        button {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background-color 0.3s;
+        }
+        
+        button:hover {
+            background-color: #0b5ed7;
+        }
+        
+        .btn-success {
+            background-color: var(--success);
+        }
+        
+        .btn-warning {
+            background-color: var(--warning);
+            color: var(--dark);
+        }
+        
+        .btn-danger {
+            background-color: var(--danger);
+        }
+        
+        .sample-alerts {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        
+        .sample-alert {
+            padding: 12px;
+            background-color: #2d3035;
+            border-radius: 5px;
+            text-align: center;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        
+        .sample-alert:hover {
+            background-color: #3a3f46;
+        }
+        
+        .severity-badges {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin: 20px 0;
+        }
+        
+        .severity-badge {
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: bold;
+        }
+        
+        .critical {
+            background-color: var(--danger);
+        }
+        
+        .high {
+            background-color: #fd7e14;
+        }
+        
+        .medium {
+            background-color: var(--warning);
+            color: var(--dark);
+        }
+        
+        .low {
+            background-color: var(--secondary);
+        }
+        
+        .activity-log {
+            background-color: #2d3035;
+            border-radius: 5px;
+            padding: 15px;
+            margin-top: 15px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        
+        .log-entry {
+            margin-bottom: 10px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #3a3f46;
+            font-family: monospace;
+        }
+        
+        .log-entry:last-child {
+            border-bottom: none;
+        }
+        
+        .analysis-placeholder {
+            text-align: center;
+            padding: 40px 0;
+            color: var(--secondary);
+        }
+        
+        .file-upload {
+            background-color: #2d3035;
+            border: 2px dashed #3a3f46;
+            border-radius: 5px;
+            padding: 20px;
+            text-align: center;
+            margin: 15px 0;
+            cursor: pointer;
+        }
+        
+        .file-upload:hover {
+            background-color: #3a3f46;
+        }
+        
+        .alert-list {
+            max-height: 300px;
+            overflow-y: auto;
+            margin: 15px 0;
+        }
+        
+        .alert-item {
+            padding: 10px;
+            background-color: #2d3035;
+            border-radius: 5px;
+            margin-bottom: 10px;
+            cursor: pointer;
+        }
+        
+        .alert-item:hover {
+            background-color: #3a3f46;
+        }
+        
+        .alert-summary {
+            font-size: 0.9em;
+            color: var(--secondary);
+        }
+        
+        .analysis-section {
+            margin-bottom: 20px;
+        }
+        
+        .recommended-actions {
+            background-color: #2d3035;
+            border-radius: 5px;
+            padding: 15px;
+        }
+        
+        .recommended-actions ul {
+            padding-left: 20px;
+        }
+        
+        .recommended-actions li {
+            margin-bottom: 8px;
+        }
+        
+        .json-preview {
+            background-color: #2d3035;
+            border-radius: 5px;
+            padding: 15px;
+            margin: 15px 0;
+            max-height: 200px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        
+        .stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 10px;
+            margin: 15px 0;
+        }
+        
+        .stat-box {
+            background-color: #2d3035;
+            border-radius: 5px;
+            padding: 15px;
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: var(--info);
+        }
+        
+        .stat-label {
+            font-size: 14px;
+            color: var(--secondary);
+        }
+        
+        .progress {
+            height: 20px;
+            background-color: #2d3035;
+            border-radius: 5px;
+            margin: 15px 0;
+            overflow: hidden;
+        }
+        
+        .progress-bar {
+            height: 100%;
+            background-color: var(--primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .json-key {
+            color: var(--info);
+        }
+        
+        .json-string {
+            color: var(--success);
+        }
+        
+        .json-number {
+            color: var(--warning);
+        }
+        
+        .json-boolean {
+            color: var(--primary);
+        }
+        
+        .json-null {
+            color: var(--secondary);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>SOC Alert Analysis Tester with Log Parser</h1>
+            <p>Test security alerts and parse FortiGate logs in one integrated tool</p>
+            <div class="ollama-status offline" id="ollama-status">Ollama Offline</div>
+        </header>
+        
+        <div class="tabs">
+            <div class="tab active" data-tab="soc-tester">SOC Alert Tester</div>
+            <div class="tab" data-tab="log-parser">Log Parser</div>
+            <div class="tab" data-tab="analysis-results">Analysis Results</div>
+        </div>
+        
+        <!-- SOC Alert Tester Tab -->
+        <div class="tab-content active" id="soc-tester">
+            <div class="dashboard">
+                <div class="card">
+                    <h2>Alert Submission</h2>
+                    
+                    <div class="alert-type">
+                        <label for="alert-type">Alert Type:</label>
+                        <select id="alert-type">
+                            <option selected>Endpoint Alert</option>
+                            <option>Network Alert</option>
+                            <option>Cloud Alert</option>
+                            <option>Application Alert</option>
+                        </select>
+                    </div>
+                    
+                    <label for="alert-data">Alert Data (JSON):</label>
+                    <textarea id="alert-data">{
+    "Event Receive Time": "2025-06-19 17:34:21",
+    "Reporting IP": "172.20.0.1",
+    "Event Type": "FortiGate-event-wireless-rogue-detect-chg",
+    "Event Name": "Rogue AP change detected",
+    "Raw Event Log": "<13>date=2025-06-19 time=17:34:21 devname=\"EvvoTevvo\" devid=\"FG101FTK20008934\" eventtime=1750325660662446628 tz=\"+0800\" logid=\"0104043571\" type=\"event\" subtype=\"wireless\" level=\"notice\" vd=\"root\" logdesc=\"Rogue AP change detected\" ssid=\"Evvo-Staff\" bssid=\"78:45:58:83:21:3a\" aptype=0 rate=288 radioband=\"11NGHT20\" channel=6 action=\"rogue-ap-changed\" manuf=\"Ubiquiti\" security=\"WPA2 Personal\" encryption=\"AES\" signal=-53 noise=-95 live=8144911 age=0 onwire=\"no\" detectionmethod=\"N/A\" stamac=\"78:45:58:83:21:39\" apscan=\"N/A\" sndetected=\"FP231FTF20009114\" radioiddetected=2 stacount=0 snclosest=\"FP231FTF20009114\" radioidclosest=2 apstatus=0 msg=\"AP Evvo-Staff 78:45:58:83:21:3a chan 6 live 8144911\""
+}</textarea>
+                    
+                    <button id="submit-alert">Submit Alert for Analysis</button>
+                    
+                    <h3>Load from Test Data</h3>
+                    <div class="file-upload" id="file-upload-soc">
+                        <p>Click to load test-data/logs.json or drag & drop file</p>
+                        <input type="file" id="file-input-soc" accept=".json" style="display: none;">
+                    </div>
+                    
+                    <div id="alert-list" class="alert-list">
+                        <!-- Alert items will be loaded here -->
+                    </div>
+                    
+                    <h3>Sample Alerts</h3>
+                    <div class="sample-alerts">
+                        <div class="sample-alert" data-sample="bruteforce">Brute Force</div>
+                        <div class="sample-alert" data-sample="malware">Malware</div>
+                        <div class="sample-alert" data-sample="rogue">Rogue AP</div>
+                        <div class="sample-alert" data-sample="vpn">VPN Issue</div>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <h2>Analysis Results</h2>
+                    
+                    <div class="analysis-placeholder" id="results-placeholder">
+                        <h3>No alerts analyzed yet</h3>
+                        <p>Submit an alert to see analysis results</p>
+                    </div>
+                    
+                    <div id="analysis-results" style="display: none;">
+                        <div class="analysis-section">
+                            <h3>Threat Assessment</h3>
+                            <p id="threat-assessment">The submitted alert appears to be a <strong>Unknown Threat</strong>.</p>
+                        </div>
+                        
+                        <div class="analysis-section">
+                            <h3>Severity Level</h3>
+                            <div class="severity-badges" id="severity-badges">
+                                <div class="severity-badge medium">Medium</div>
+                            </div>
+                        </div>
+                        
+                        <div class="analysis-section">
+                            <h3>Recommended Actions</h3>
+                            <div class="recommended-actions" id="recommended-actions">
+                                <ul>
+                                    <li>Review the alert details</li>
+                                    <li>Monitor for further activity</li>
+                                </ul>
+                            </div>
+                        </div>
+                        
+                        <div class="analysis-section">
+                            <h3>Ollama Analysis</h3>
+                            <div id="ollama-analysis" class="activity-log">
+                                <div class="log-entry">Ollama offline - using simulated analysis</div>
+                                <div class="log-entry">Alert type: unknown</div>
+                                <div class="log-entry">Event: unknown</div>
+                                <div class="log-entry">Source IP: unknown</div>
+                                <div class="log-entry">Confidence: 85%</div>
+                            </div>
+                        </div>
+                        
+                        <div class="analysis-section">
+                            <h3>Parsed Alert Data</h3>
+                            <div id="parsed-alert" class="json-preview">
+                                {/* Parsed JSON will appear here */}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card">
+                <h2>Activity Log</h2>
+                <a href="http://tocatmostr.net" class="url">http://tocatmostr.net</a>
+                
+                <div class="activity-log" id="activity-log">
+                    <div class="log-entry">[9:20:20 am] Loaded bruteforce sample</div>
+                    <div class="log-entry">[9:20:22 am] Submitting endpoint alert for analysis ...</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Log Parser Tab -->
+        <div class="tab-content" id="log-parser">
+            <div class="dashboard">
+                <div class="card">
+                    <h2>Input Log Data</h2>
+                    
+                    <div class="file-upload" id="file-upload-parser">
+                        <p>Click to upload JSON file with logs or drag & drop file</p>
+                        <input type="file" id="file-input-parser" accept=".json" style="display: none;">
+                    </div>
+                    
+                    <textarea id="input-data" placeholder="Paste your log data here or upload a file"></textarea>
+                    
+                    <button id="parse-btn">Parse Log Data</button>
+                    <button id="download-btn" class="btn-success" disabled>Download Parsed Data</button>
+                    
+                    <div class="stats">
+                        <div class="stat-box">
+                            <div class="stat-value" id="total-alerts">0</div>
+                            <div class="stat-label">Total Alerts</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-value" id="parsed-alerts">0</div>
+                            <div class="stat-label">Parsed Alerts</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-value" id="unique-keys">0</div>
+                            <div class="stat-label">Unique Keys</div>
+                        </div>
+                    </div>
+                    
+                    <div class="progress">
+                        <div class="progress-bar" id="progress-bar" style="width: 0%">0%</div>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <h2>Parsed Results</h2>
+                    
+                    <div id="parser-results-placeholder">
+                        <p>Parsed results will appear here</p>
+                    </div>
+                    
+                    <div id="parsed-results" class="json-preview" style="display: none;"></div>
+                    
+                    <h3>Sample Parsed Alert</h3>
+                    <div id="sample-alert" class="json-preview"></div>
+                </div>
+            </div>
+            
+            <div class="card">
+                <h2>How It Works</h2>
+                <ol>
+                    <li>Upload a JSON file containing your FortiGate alerts or paste the JSON data directly</li>
+                    <li>Click "Parse Log Data" to extract all key-value pairs from the "Raw Event Log" field</li>
+                    <li>The parser will process each alert and create a new JSON structure with all fields expanded</li>
+                    <li>Download the parsed data as a JSON file for further analysis</li>
+                </ol>
+                
+                <h3>Example Transformation</h3>
+                <div class="json-preview">
+// Original:
+{
+  "Raw Event Log": "date=2025-06-19 time=17:34:21 devname=\"EvvoTevvo\" ..."
+}
+
+// Becomes:
+{
+  "date": "2025-06-19",
+  "time": "17:34:21",
+  "devname": "EvvoTevvo",
+  ...
+}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Analysis Results Tab -->
+        <div class="tab-content" id="analysis-results-tab">
+            <div class="card">
+                <h2>Analysis History</h2>
+                <div id="analysis-history" class="activity-log">
+                    <div class="log-entry">No analysis history yet. Submit alerts to see results here.</div>
+                </div>
+            </div>
+            
+            <div class="card">
+                <h2>Threat Statistics</h2>
+                <div class="stats">
+                    <div class="stat-box">
+                        <div class="stat-value" id="total-analyses">0</div>
+                        <div class="stat-label">Total Analyses</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-value" id="critical-threats">0</div>
+                        <div class="stat-label">Critical Threats</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-value" id="high-threats">0</div>
+                        <div class="stat-label">High Threats</div>
+                    </div>
+                </div>
+                
+                <h3>Threat Type Distribution</h3>
+                <div id="threat-chart" style="height: 200px; background-color: #2d3035; border-radius: 5px; padding: 15px; margin: 15px 0;">
+                    <p>No threat data available yet. Submit alerts to see statistics.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Tab functionality
+            const tabs = document.querySelectorAll('.tab');
+            const tabContents = document.querySelectorAll('.tab-content');
+            
+            tabs.forEach(tab => {
+                tab.addEventListener('click', () => {
+                    const tabId = tab.getAttribute('data-tab');
+                    
+                    // Update active tab
+                    tabs.forEach(t => t.classList.remove('active'));
+                    tab.classList.add('active');
+                    
+                    // Show correct content
+                    tabContents.forEach(content => {
+                        content.classList.remove('active');
+                        if (content.id === tabId) {
+                            content.classList.add('active');
+                        }
+                    });
+                });
+            });
+            
+            // SOC Alert Tester functionality
+            const submitButton = document.getElementById('submit-alert');
+            const fileUploadSoc = document.getElementById('file-upload-soc');
+            const fileInputSoc = document.getElementById('file-input-soc');
+            const alertList = document.getElementById('alert-list');
+            const sampleAlerts = document.querySelectorAll('.sample-alert');
+            const activityLog = document.getElementById('activity-log');
+            const resultsPlaceholder = document.getElementById('results-placeholder');
+            const analysisResults = document.getElementById('analysis-results');
+            const threatAssessment = document.getElementById('threat-assessment');
+            const severityBadges = document.getElementById('severity-badges');
+            const recommendedActions = document.getElementById('recommended-actions');
+            const ollamaAnalysis = document.getElementById('ollama-analysis');
+            const parsedAlert = document.getElementById('parsed-alert');
+            
+            // Log Parser functionality
+            const fileUploadParser = document.getElementById('file-upload-parser');
+            const fileInputParser = document.getElementById('file-input-parser');
+            const inputData = document.getElementById('input-data');
+            const parseBtn = document.getElementById('parse-btn');
+            const downloadBtn = document.getElementById('download-btn');
+            const parsedResults = document.getElementById('parsed-results');
+            const parserResultsPlaceholder = document.getElementById('parser-results-placeholder');
+            const sampleAlert = document.getElementById('sample-alert');
+            const totalAlerts = document.getElementById('total-alerts');
+            const parsedAlerts = document.getElementById('parsed-alerts');
+            const uniqueKeys = document.getElementById('unique-keys');
+            const progressBar = document.getElementById('progress-bar');
+            
+            // Analysis Results functionality
+            const analysisHistory = document.getElementById('analysis-history');
+            const totalAnalyses = document.getElementById('total-analyses');
+            const criticalThreats = document.getElementById('critical-threats');
+            const highThreats = document.getElementById('high-threats');
+            
+            let parsedData = [];
+            let allKeys = new Set();
+            let analysisHistoryData = [];
+            
+            // Sample alert data
+            const sampleData = {
+                bruteforce: `{
+    "type": "endpoint",
+    "event": "auth-failed",
+    "user": "admin",
+    "count": 23,
+    "srcip": "192.168.1.15",
+    "severity": 8,
+    "timestamp": "2025-08-27T01:19:45.4972"
+}`,
+                malware: `{
+    "type": "endpoint",
+    "event": "malware-detected",
+    "file": "cryptolocker.exe",
+    "path": "C:/Users/Public/temp",
+    "action": "quarantined",
+    "severity": 9,
+    "timestamp": "2025-08-27T01:22:18.3421"
+}`,
+                rogue: `{
+    "type": "network",
+    "event": "rogue-ap-detected",
+    "ssid": "Free Public WiFi",
+    "bssid": "AA:BB:CC:DD:EE:FF",
+    "channel": 6,
+    "severity": 7,
+    "timestamp": "2025-08-27T01:25:33.1289"
+}`,
+                vpn: `{
+    "type": "network",
+    "event": "vpn-connection-failed",
+    "user": "jdoe",
+    "reason": "authentication-error",
+    "count": 5,
+    "severity": 4,
+    "timestamp": "2025-08-27T01:28:47.5612"
+}`
+            };
+            
+            // File upload handling for SOC Tester
+            fileUploadSoc.addEventListener('click', () => {
+                fileInputSoc.click();
+            });
+            
+            fileInputSoc.addEventListener('change', (event) => {
+                const file = event.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        try {
+                            const logs = JSON.parse(e.target.result);
+                            loadAlertsFromFile(logs);
+                            addLogEntry(`Loaded ${Array.isArray(logs) ? logs.length : 1} alerts from ${file.name}`);
+                        } catch (error) {
+                            addLogEntry(`Error parsing JSON file: ${error.message}`);
+                            alert('Failed to parse JSON file. Please check the format.');
+                        }
+                    };
+                    reader.readAsText(file);
+                }
+            });
+            
+            // File upload handling for Log Parser
+            fileUploadParser.addEventListener('click', () => {
+                fileInputParser.click();
+            });
+            
+            fileInputParser.addEventListener('change', (event) => {
+                const file = event.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        try {
+                            inputData.value = e.target.result;
+                            addLogEntry(`Loaded data from ${file.name}`);
+                        } catch (error) {
+                            addLogEntry(`Error reading file: ${error.message}`);
+                        }
+                    };
+                    reader.readAsText(file);
+                }
+            });
+            
+            // Load alerts from JSON file for SOC Tester
+            function loadAlertsFromFile(logs) {
+                alertList.innerHTML = '';
+                
+                if (Array.isArray(logs)) {
+                    logs.forEach((log, index) => {
+                        const alertItem = document.createElement('div');
+                        alertItem.className = 'alert-item';
+                        alertItem.innerHTML = `
+                            <strong>Alert ${index + 1}</strong>
+                            <div class="alert-summary">${log.type || log['Event Type'] || 'Unknown'} - ${log.event || log['Event Name'] || 'Unknown'}</div>
+                        `;
+                        alertItem.addEventListener('click', () => {
+                            document.getElementById('alert-data').value = JSON.stringify(log, null, 2);
+                            addLogEntry(`Loaded alert ${index + 1} from file`);
+                        });
+                        alertList.appendChild(alertItem);
+                    });
+                } else {
+                    // Single alert object
+                    const alertItem = document.createElement('div');
+                    alertItem.className = 'alert-item';
+                    alertItem.innerHTML = `
+                        <strong>Alert</strong>
+                        <div class="alert-summary">${logs.type || logs['Event Type'] || 'Unknown'} - ${logs.event || logs['Event Name'] || 'Unknown'}</div>
+                    `;
+                    alertItem.addEventListener('click', () => {
+                        document.getElementById('alert-data').value = JSON.stringify(logs, null, 2);
+                        addLogEntry('Loaded alert from file');
+                    });
+                    alertList.appendChild(alertItem);
+                }
+            }
+            
+            // Sample alert click handler
+            sampleAlerts.forEach(sample => {
+                sample.addEventListener('click', () => {
+                    const sampleType = sample.getAttribute('data-sample');
+                    document.getElementById('alert-data').value = sampleData[sampleType];
+                    addLogEntry(`Loaded ${sampleType} sample`);
+                });
+            });
+            
+            // Submit alert handler
+            submitButton.addEventListener('click', () => {
+                const alertData = document.getElementById('alert-data').value;
+                
+                try {
+                    const alertJson = JSON.parse(alertData);
+                    addLogEntry('Submitting alert for analysis ...');
+                    
+                    // Simulate analysis delay
+                    setTimeout(() => {
+                        analyzeAlert(alertJson);
+                        addLogEntry('Analysis complete');
+                    }, 2000);
+                    
+                } catch (e) {
+                    addLogEntry('Error: Invalid JSON format in alert data');
+                    alert('Please check your JSON format');
+                }
+            });
+            
+            // Parse button handler
+            parseBtn.addEventListener('click', () => {
+                try {
+                    const data = JSON.parse(inputData.value);
+                    processData(data);
+                } catch (error) {
+                    addLogEntry(`Error parsing JSON: ${error.message}`);
+                    alert('Invalid JSON format. Please check your data.');
+                }
+            });
+            
+            // Download button handler
+            downloadBtn.addEventListener('click', () => {
+                downloadJSON(parsedData, 'parsed_fortigate_logs.json');
+            });
+            
+            // Analyze the alert
+            function analyzeAlert(alert) {
+                resultsPlaceholder.style.display = 'none';
+                analysisResults.style.display = 'block';
+                
+                // Parse the alert if it contains raw log data
+                let parsedAlertData = alert;
+                if (alert['Raw Event Log']) {
+                    parsedAlertData = parseAlert(alert);
+                    parsedAlert.innerHTML = syntaxHighlight(JSON.stringify(parsedAlertData, null, 2));
+                }
+                
+                // Determine threat type based on alert content
+                let threatType = 'Unknown Threat';
+                let severity = 'medium';
+                let actions = ['Review the alert details', 'Monitor for further activity'];
+                
+                if ((alert.event && alert.event.includes('auth-failed')) || 
+                    (alert['Event Type'] && alert['Event Type'].includes('auth'))) {
+                    threatType = 'Brute Force Attack';
+                    severity = 'critical';
+                    actions = [
+                        'Block source IP ' + (alert.srcip || parsedAlertData.srcip || 'unknown'),
+                        'Reset credentials for user ' + (alert.user || 'affected account'),
+                        'Check for compromised accounts',
+                        'Review authentication logs'
+                    ];
+                } else if ((alert.event && alert.event.includes('traffic')) || 
+                          (alert['Event Type'] && alert['Event Type'].includes('traffic'))) {
+                    threatType = 'Suspicious Network Traffic';
+                    severity = 'medium';
+                    actions = [
+                        'Investigate source IP: ' + (alert.srcip || parsedAlertData.srcip || 'unknown'),
+                        'Check firewall rules for port anomalies',
+                        'Review network traffic patterns',
+                        'Monitor for additional suspicious activity'
+                    ];
+                } else if ((alert.event && alert.event.includes('rogue')) || 
+                          (alert['Event Type'] && alert['Event Type'].includes('rogue'))) {
+                    threatType = 'Rogue Access Point';
+                    severity = 'high';
+                    actions = [
+                        'Locate and disable rogue AP: ' + (parsedAlertData.ssid || 'unknown'),
+                        'Scan for affected devices',
+                        'Review wireless network policies',
+                        'Update WIPS signatures'
+                    ];
+                } else if (alert.event && alert.event.includes('malware')) {
+                    threatType = 'Malware Infection';
+                    severity = 'high';
+                    actions = [
+                        'Isolate affected system',
+                        'Scan for additional infections',
+                        'Review execution path',
+                        'Check network connections'
+                    ];
+                }
+                
+                // Update analysis results
+                threatAssessment.innerHTML = `The submitted alert appears to be a <strong>${threatType}</strong>.`;
+                
+                // Update severity badge
+                severityBadges.innerHTML = `
+                    <div class="severity-badge ${severity}">${severity.charAt(0).toUpperCase() + severity.slice(1)}</div>
+                `;
+                
+                // Update recommended actions
+                recommendedActions.innerHTML = '';
+                const actionsList = document.createElement('ul');
+                actions.forEach(action => {
+                    const li = document.createElement('li');
+                    li.textContent = action;
+                    actionsList.appendChild(li);
+                });
+                recommendedActions.appendChild(actionsList);
+                
+                // Simulate Ollama analysis
+                ollamaAnalysis.innerHTML = `
+                    <div class="log-entry">Ollama offline - using simulated analysis</div>
+                    <div class="log-entry">Alert type: ${alert.type || alert['Event Type'] || 'unknown'}</div>
+                    <div class="log-entry">Event: ${alert.event || alert['Event Name'] || 'unknown'}</div>
+                    <div class="log-entry">Source IP: ${alert.srcip || parsedAlertData.srcip || 'unknown'}</div>
+                    <div class="log-entry">Confidence: 85%</div>
+                `;
+                
+                // Add to analysis history
+                addToAnalysisHistory({
+                    alert: alert,
+                    threatType: threatType,
+                    severity: severity,
+                    timestamp: new Date().toISOString()
+                });
+            }
+            
+            // Process the data for Log Parser
+            function processData(data) {
+                parsedData = [];
+                allKeys = new Set();
+                
+                // Check if data is an array or single object
+                const alerts = Array.isArray(data) ? data : [data];
+                totalAlerts.textContent = alerts.length;
+                
+                // Show progress bar
+                progressBar.style.width = '0%';
+                progressBar.textContent = '0%';
+                
+                // Process each alert
+                for (let i = 0; i < alerts.length; i++) {
+                    const alert = alerts[i];
+                    const parsedAlert = parseAlert(alert);
+                    
+                    if (parsedAlert) {
+                        parsedData.push(parsedAlert);
+                        
+                        // Collect all unique keys
+                        Object.keys(parsedAlert).forEach(key => allKeys.add(key));
+                    }
+                    
+                    // Update progress
+                    const progress = Math.round((i + 1) / alerts.length * 100);
+                    progressBar.style.width = `${progress}%`;
+                    progressBar.textContent = `${progress}%`;
+                    
+                    // Update counters
+                    parsedAlerts.textContent = parsedData.length;
+                    uniqueKeys.textContent = allKeys.size;
+                }
+                
+                // Display results
+                if (parsedData.length > 0) {
+                    parserResultsPlaceholder.style.display = 'none';
+                    parsedResults.style.display = 'block';
+                    parsedResults.innerHTML = `Successfully parsed ${parsedData.length} alerts with ${allKeys.size} unique fields.`;
+                    
+                    // Show sample alert
+                    sampleAlert.innerHTML = syntaxHighlight(JSON.stringify(parsedData[0], null, 2));
+                    
+                    // Enable download button
+                    downloadBtn.disabled = false;
+                    
+                    addLogEntry(`Parsed ${parsedData.length} alerts with ${allKeys.size} unique fields`);
+                } else {
+                    addLogEntry('No alerts were parsed successfully');
+                }
+            }
+            
+            // Parse a single alert
+            function parseAlert(alert) {
+                try {
+                    // Create a copy of the original alert
+                    const parsedAlert = {...alert};
+                    
+                    // Check if we have a raw event log to parse
+                    if (alert['Raw Event Log']) {
+                        const rawLog = alert['Raw Event Log'];
+                        
+                        // Parse key=value pairs from the raw log
+                        const regex = /(\w+)=([^=]*)(?=\s+\w+=|$)/g;
+                        let match;
+                        
+                        while ((match = regex.exec(rawLog)) !== null) {
+                            const key = match[1];
+                            let value = match[2].trim();
+                            
+                            // Remove quotes if present
+                            if (value.startsWith('"') && value.endsWith('"')) {
+                                value = value.slice(1, -1);
+                            }
+                            
+                            // Try to convert to number if possible
+                            if (!isNaN(value) && value !== '') {
+                                parsedAlert[key] = Number(value);
+                            } else if (value === 'true' || value === 'false') {
+                                parsedAlert[key] = value === 'true';
+                            } else {
+                                parsedAlert[key] = value;
+                            }
+                        }
+                    }
+                    
+                    return parsedAlert;
+                } catch (error) {
+                    console.error('Error parsing alert:', error);
+                    return null;
+                }
+            }
+            
+            // Add to analysis history
+            function addToAnalysisHistory(analysis) {
+                analysisHistoryData.unshift(analysis);
+                
+                // Update history display
+                analysisHistory.innerHTML = '';
+                analysisHistoryData.forEach((item, index) => {
+                    const entry = document.createElement('div');
+                    entry.className = 'log-entry';
+                    entry.innerHTML = `
+                        <strong>${new Date(item.timestamp).toLocaleString()}</strong> - 
+                        ${item.threatType} (${item.severity})
+                    `;
+                    entry.addEventListener('click', () => {
+                        // Show this analysis in the SOC Tester tab
+                        document.getElementById('alert-data').value = JSON.stringify(item.alert, null, 2);
+                        tabs[0].click(); // Switch to SOC Tester tab
+                        analyzeAlert(item.alert);
+                    });
+                    analysisHistory.appendChild(entry);
+                });
+                
+                // Update statistics
+                totalAnalyses.textContent = analysisHistoryData.length;
+                criticalThreats.textContent = analysisHistoryData.filter(a => a.severity === 'critical').length;
+                highThreats.textContent = analysisHistoryData.filter(a => a.severity === 'high').length;
+            }
+            
+            // Download JSON data
+            function downloadJSON(data, filename) {
+                const jsonString = JSON.stringify(data, null, 2);
+                const blob = new Blob([jsonString], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                
+                addLogEntry(`Downloaded ${data.length} parsed alerts as ${filename}`);
+            }
+            
+            // Add entry to log
+            function addLogEntry(message) {
+                const now = new Date();
+                const time = now.toLocaleTimeString();
+                const logEntry = document.createElement('div');
+                logEntry.className = 'log-entry';
+                logEntry.textContent = `[${time}] ${message}`;
+                activityLog.prepend(logEntry);
+            }
+            
+            // JSON syntax highlighting
+            function syntaxHighlight(json) {
+                if (typeof json != 'string') {
+                    json = JSON.stringify(json, undefined, 2);
+                }
+                json = json.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                return json.replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, function (match) {
+                    let cls = 'json-number';
+                    if (/^"/.test(match)) {
+                        if (/:$/.test(match)) {
+                            cls = 'json-key';
+                        } else {
+                            cls = 'json-string';
+                        }
+                    } else if (/true|false/.test(match)) {
+                        cls = 'json-boolean';
+                    } else if (/null/.test(match)) {
+                        cls = 'json-null';
+                    }
+                    return '<span class="' + cls + '">' + match + '</span>';
+                });
+            }
+            
+            // Initialize with sample data
+            sampleAlert.innerHTML = syntaxHighlight(JSON.stringify({
+                "Event Receive Time": "2025-06-19 17:34:21",
+                "Reporting IP": "172.20.0.1",
+                "Event Type": "FortiGate-event-wireless-rogue-detect-chg",
+                "Event Name": "Rogue AP change detected",
+                "date": "2025-06-19",
+                "time": "17:34:21",
+                "devname": "EvvoTevvo",
+                "devid": "FG101FTK20008934",
+                "eventtime": 1750325660662446600,
+                "tz": "+0800",
+                "logid": "0104043571",
+                "type": "event",
+                "subtype": "wireless",
+                "level": "notice",
+                "vd": "root",
+                "logdesc": "Rogue AP change detected",
+                "ssid": "Evvo-Staff",
+                "bssid": "78:45:58:83:21:3a",
+                "aptype": 0,
+                "rate": 288,
+                "radioband": "11NGHT20",
+                "channel": 6,
+                "action": "rogue-ap-changed",
+                "manuf": "Ubiquiti",
+                "security": "WPA2 Personal",
+                "encryption": "AES",
+                "signal": -53,
+                "noise": -95,
+                "live": 8144911,
+                "age": 0,
+                "onwire": "no",
+                "detectionmethod": "N/A",
+                "stamac": "78:45:58:83:21:39",
+                "apscan": "N/A",
+                "sndetected": "FP231FTF20009114",
+                "radioiddetected": 2,
+                "stacount": 0,
+                "snclosest": "FP231FTF20009114",
+                "radioidclosest": 2,
+                "apstatus": 0,
+                "msg": "AP Evvo-Staff 78:45:58:83:21:3a chan 6 live 8144911"
+            }, null, 2));
+        });
+    </script>
+</body>
+</html>

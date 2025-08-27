@@ -1,105 +1,518 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>SOC Alert Tester</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SOC Alert Triage - Connection Troubleshooter</title>
     <style>
-        body { font-family: Arial; padding: 20px; }
-        .panel { display: flex; margin-bottom: 20px; }
-        .form-panel { flex: 1; padding: 15px; border: 1px solid #ddd; }
-        .results-panel { flex: 2; padding: 15px; border: 1px solid #ddd; margin-left: 10px; }
-        textarea { width: 100%; height: 200px; }
-        button { padding: 10px 15px; background: #0066cc; color: white; border: none; cursor: pointer; }
-        .log-entry { margin: 5px 0; padding: 5px; background: #f5f5f5; }
+        :root {
+            --primary: #2563eb;
+            --secondary: #4b5563;
+            --success: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --info: #06b6d4;
+            --light: #f3f4f6;
+            --dark: #1f2937;
+            --background: #f9fafb;
+            --card-bg: #ffffff;
+            --border: #e5e7eb;
+        }
+        
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background-color: var(--background);
+            color: var(--dark);
+            line-height: 1.6;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+        
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--border);
+        }
+        
+        h1 {
+            color: var(--dark);
+            margin-bottom: 5px;
+            font-weight: 700;
+        }
+        
+        .subtitle {
+            color: var(--secondary);
+            font-size: 1.1rem;
+        }
+        
+        .status-indicator {
+            display: inline-flex;
+            align-items: center;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+        
+        .status-online {
+            background-color: rgba(16, 185, 129, 0.1);
+            color: var(--success);
+        }
+        
+        .status-offline {
+            background-color: rgba(239, 68, 68, 0.1);
+            color: var(--danger);
+        }
+        
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        
+        .status-online .status-dot {
+            background-color: var(--success);
+        }
+        
+        .status-offline .status-dot {
+            background-color: var(--danger);
+        }
+        
+        .panel {
+            background-color: var(--card-bg);
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05), 0 1px 3px rgba(0, 0, 0, 0.1);
+            padding: 24px;
+            margin-bottom: 20px;
+        }
+        
+        .panel h2 {
+            margin-bottom: 20px;
+            color: var(--dark);
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 12px;
+            font-weight: 600;
+        }
+        
+        .troubleshooting-steps {
+            margin-bottom: 20px;
+        }
+        
+        .step {
+            display: flex;
+            align-items: flex-start;
+            margin-bottom: 15px;
+            padding: 15px;
+            border-radius: 8px;
+            background-color: #f8fafc;
+            border-left: 4px solid var(--info);
+        }
+        
+        .step-number {
+            background-color: var(--info);
+            color: white;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            margin-right: 15px;
+            flex-shrink: 0;
+        }
+        
+        .step-content {
+            flex-grow: 1;
+        }
+        
+        .step-title {
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+        
+        .code-block {
+            background-color: var(--dark);
+            color: white;
+            padding: 12px;
+            border-radius: 6px;
+            font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
+            margin: 10px 0;
+            overflow-x: auto;
+        }
+        
+        .btn {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: background-color 0.2s, transform 0.1s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        
+        .btn:hover {
+            background-color: #1d4ed8;
+        }
+        
+        .btn:active {
+            transform: translateY(1px);
+        }
+        
+        .btn-success {
+            background-color: var(--success);
+        }
+        
+        .btn-success:hover {
+            background-color: #059669;
+        }
+        
+        .btn-warning {
+            background-color: var(--warning);
+            color: var(--dark);
+        }
+        
+        .btn-warning:hover {
+            background-color: #d97706;
+        }
+        
+        .log-container {
+            margin-top: 30px;
+            max-height: 200px;
+            overflow-y: auto;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background-color: var(--card-bg);
+        }
+        
+        .log-header {
+            padding: 12px 16px;
+            background-color: #f8fafc;
+            border-bottom: 1px solid var(--border);
+            font-weight: 600;
+            color: var(--dark);
+            position: sticky;
+            top: 0;
+        }
+        
+        .log-entry {
+            padding: 10px 16px;
+            border-bottom: 1px solid var(--border);
+            font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
+            font-size: 0.85rem;
+        }
+        
+        .log-entry:last-child {
+            border-bottom: none;
+        }
+        
+        .log-entry:nth-child(odd) {
+            background-color: rgba(0, 0, 0, 0.02);
+        }
+        
+        .timestamp {
+            color: var(--secondary);
+            margin-right: 10px;
+            font-weight: 500;
+        }
+        
+        .log-info {
+            color: var(--info);
+        }
+        
+        .log-success {
+            color: var(--success);
+        }
+        
+        .log-error {
+            color: var(--danger);
+        }
+        
+        .log-warning {
+            color: var(--warning);
+        }
+        
+        .test-area {
+            background-color: #f1f5f9;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+        
+        .test-result {
+            margin-top: 15px;
+            padding: 15px;
+            border-radius: 8px;
+            background-color: white;
+        }
     </style>
 </head>
 <body>
-    <h1>SOC Alert Triage Tester</h1>
-    
-    <div class="panel">
-        <div class="form-panel">
-            <h2>Alert Submission</h2>
-            <select id="alertType">
-                <option value="network">Network Alert</option>
-                <option value="endpoint">Endpoint Alert</option>
-                <option value="app">Application Alert</option>
-            </select>
+    <div class="container">
+        <header>
+            <div>
+                <h1>SOC Alert Triage System</h1>
+                <p class="subtitle">Ollama Connection Troubleshooter</p>
+            </div>
+            <div id="status" class="status-indicator status-offline">
+                <span class="status-dot"></span>
+                <span>Checking Connection...</span>
+            </div>
+        </header>
+        
+        <div class="panel">
+            <h2>Connection Troubleshooting</h2>
+            <p>It looks like your browser can't connect to Ollama. Here's how to fix it:</p>
             
-            <textarea id="alertData" placeholder="Paste JSON alert or edit...">
-{
-  "type": "network",
-  "srcip": "192.168.1.1",
-  "dstip": "10.0.0.5",
-  "severity": 4,
-  "timestamp": "2023-11-15T08:00:00Z"
-}</textarea>
+            <div class="troubleshooting-steps">
+                <div class="step">
+                    <div class="step-number">1</div>
+                    <div class="step-content">
+                        <div class="step-title">Verify Ollama is running</div>
+                        <p>Open a terminal and run:</p>
+                        <div class="code-block">ollama serve</div>
+                        <p>Or if it's already running, check its status with:</p>
+                        <div class="code-block">ollama list</div>
+                        <button class="btn" onclick="testOllama()">Test Ollama Connection</button>
+                    </div>
+                </div>
+                
+                <div class="step">
+                    <div class="step-number">2</div>
+                    <div class="step-content">
+                        <div class="step-title">Check if Ollama is accessible</div>
+                        <p>Open a new tab and visit: <a href="http://localhost:11434" target="_blank">http://localhost:11434</a></p>
+                        <p>If you see a message like "Ollama is running", then Ollama is working but there might be a CORS issue.</p>
+                        <button class="btn" onclick="testOllamaDirect()">Test Direct Access</button>
+                    </div>
+                </div>
+                
+                <div class="step">
+                    <div class="step-number">3</div>
+                    <div class="step-content">
+                        <div class="step-title">Fix CORS issues</div>
+                        <p>Ollama might be blocking requests from the browser. Try running Ollama with CORS enabled:</p>
+                        <div class="code-block">OLLAMA_ORIGINS="*" ollama serve</div>
+                        <p>Or set the environment variable first:</p>
+                        <div class="code-block">export OLLAMA_ORIGINS="*"<br>ollama serve</div>
+                        <button class="btn btn-warning" onclick="testWithCors()">Test with CORS</button>
+                    </div>
+                </div>
+                
+                <div class="step">
+                    <div class="step-number">4</div>
+                    <div class="step-content">
+                        <div class="step-title">Try a different approach</div>
+                        <p>If you're still having issues, you can run a local proxy server:</p>
+                        <div class="code-block">npm install -g local-cors-proxy<br>lcp --proxyUrl http://localhost:11434</div>
+                        <p>Then use http://localhost:8010/proxy as your API endpoint.</p>
+                    </div>
+                </div>
+            </div>
             
-            <button id="submitBtn">Submit Alert</button>
-            
-            <h3>Sample Alerts</h3>
-            <button class="sampleBtn" data-sample="bruteforce">Brute Force Attempt</button>
-            <button class="sampleBtn" data-sample="malware">Malware Detection</button>
+            <div class="test-area">
+                <h3>Connection Tests</h3>
+                <button class="btn" onclick="testOllama()">Test Basic Connection</button>
+                <button class="btn btn-warning" onclick="testWithCors()">Test with CORS Proxy</button>
+                <button class="btn btn-success" onclick="testModels()">Test Available Models</button>
+                
+                <div id="testResult" class="test-result">
+                    Run a test to see results here.
+                </div>
+            </div>
         </div>
         
-        <div class="results-panel">
-            <h2>Analysis Results</h2>
-            <div id="results"></div>
-            <canvas id="severityChart" width="400" height="200"></canvas>
-            <div id="logOutput"></div>
+        <div class="log-container">
+            <div class="log-header">Activity Log</div>
+            <div id="logOutput">
+                <div class="log-entry">
+                    <span class="timestamp">[11:25:25 AM]</span>
+                    <span class="log-info">Make sure Ollama is running on http://localhost:11434</span>
+                </div>
+                <div class="log-entry">
+                    <span class="timestamp">[11:25:43 AM]</span>
+                    <span class="log-info">Submitting network alert for analysis ...</span>
+                </div>
+                <div class="log-entry">
+                    <span class="timestamp">[11:25:43 AM]</span>
+                    <span class="log-error">Analysis failed: Failed to fetch</span>
+                </div>
+            </div>
         </div>
     </div>
 
     <script>
-        const { ipcRenderer } = require('electron');
-        const samples = {
-            bruteforce: {
-                type: "endpoint",
-                event: "auth-failed",
-                user: "admin",
-                count: 15,
-                severity: 5
-            },
-            malware: {
-                type: "endpoint",
-                detection: "Trojan.Generic",
-                process: "svchost.exe",
-                severity: 5
-            }
-        };
-
-        // Chart setup
-        const ctx = document.getElementById('severityChart').getContext('2d');
-        const chart = new Chart(ctx, {
-            type: 'bar',
-            data: { labels: [], datasets: [{ label: 'Severity', data: [] }] }
+        // Initialize the application
+        document.addEventListener('DOMContentLoaded', function() {
+            addLog('Ollama connection troubleshooter loaded', 'info');
+            checkOllamaStatus();
         });
-
-        document.getElementById('submitBtn').addEventListener('click', async () => {
-            const alertData = JSON.parse(document.getElementById('alertData').value);
-            const result = await ipcRenderer.invoke('submit-alert', alertData);
+        
+        // Check if Ollama is running
+        async function checkOllamaStatus() {
+            try {
+                const response = await fetch('http://localhost:11434/api/tags', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (response.ok) {
+                    document.getElementById('status').textContent = 'Ollama Online';
+                    document.getElementById('status').className = 'status-indicator status-online';
+                    addLog('Ollama is running and accessible', 'success');
+                    return true;
+                }
+            } catch (error) {
+                document.getElementById('status').textContent = 'Ollama Offline';
+                document.getElementById('status').className = 'status-indicator status-offline';
+                addLog('Ollama is not accessible: ' + error.message, 'error');
+            }
+            return false;
+        }
+        
+        // Test basic Ollama connection
+        async function testOllama() {
+            addLog('Testing Ollama connection...', 'info');
             
-            document.getElementById('results').innerHTML = 
-                `<pre>${JSON.stringify(result, null, 2)}</pre>`;
+            try {
+                const response = await fetch('http://localhost:11434/api/tags');
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    document.getElementById('testResult').innerHTML = `
+                        <strong>Connection successful!</strong><br>
+                        Ollama is running and accessible.
+                        ${data.models ? `<br>Available models: ${data.models.map(m => m.name).join(', ')}` : ''}
+                    `;
+                    addLog('Ollama connection test passed', 'success');
+                    document.getElementById('status').textContent = 'Ollama Online';
+                    document.getElementById('status').className = 'status-indicator status-online';
+                } else {
+                    document.getElementById('testResult').innerHTML = `
+                        <strong>Connection failed!</strong><br>
+                        Status: ${response.status} ${response.statusText}
+                    `;
+                    addLog(`Ollama connection test failed: ${response.status} ${response.statusText}`, 'error');
+                }
+            } catch (error) {
+                document.getElementById('testResult').innerHTML = `
+                    <strong>Connection failed!</strong><br>
+                    Error: ${error.message}
+                `;
+                addLog('Ollama connection test failed: ' + error.message, 'error');
+            }
+        }
+        
+        // Test with CORS proxy approach
+        async function testWithCors() {
+            addLog('Testing with CORS workaround...', 'info');
             
-            // Update chart
-            chart.data.labels.push(new Date().toLocaleTimeString());
-            chart.data.datasets[0].data.push(result.severity || 3);
-            chart.update();
+            try {
+                // Try to make a request with no-cors mode (limited but might work)
+                const response = await fetch('http://localhost:11434/api/tags', {
+                    mode: 'no-cors'
+                });
+                
+                document.getElementById('testResult').innerHTML = `
+                    <strong>CORS test completed</strong><br>
+                    Even if this shows success, you may still need to configure Ollama with CORS support.<br>
+                    Run: <code>OLLAMA_ORIGINS="*" ollama serve</code>
+                `;
+                addLog('CORS test completed - check result details', 'info');
+            } catch (error) {
+                document.getElementById('testResult').innerHTML = `
+                    <strong>CORS test failed</strong><br>
+                    Error: ${error.message}<br>
+                    You need to configure Ollama with CORS support.<br>
+                    Run: <code>OLLAMA_ORIGINS="*" ollama serve</code>
+                `;
+                addLog('CORS test failed: ' + error.message, 'error');
+            }
+        }
+        
+        // Test available models
+        async function testModels() {
+            addLog('Testing available models...', 'info');
             
-            // Add to log
+            try {
+                const response = await fetch('http://localhost:11434/api/tags');
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.models && data.models.length > 0) {
+                        document.getElementById('testResult').innerHTML = `
+                            <strong>Models found!</strong><br>
+                            Available models:<br>
+                            <ul>
+                                ${data.models.map(m => `<li>${m.name} (${m.size ? (m.size/1e9).toFixed(1) + 'GB' : 'size unknown'})</li>`).join('')}
+                            </ul>
+                        `;
+                        addLog(`Found ${data.models.length} models`, 'success');
+                    } else {
+                        document.getElementById('testResult').innerHTML = `
+                            <strong>No models found</strong><br>
+                            You need to pull a model first. Try:<br>
+                            <code>ollama pull llama3:8b-instruct-q4_0</code>
+                        `;
+                        addLog('No models found in Ollama', 'warning');
+                    }
+                } else {
+                    document.getElementById('testResult').innerHTML = `
+                        <strong>Failed to get models</strong><br>
+                        Status: ${response.status} ${response.statusText}
+                    `;
+                    addLog('Failed to get models: ' + response.status, 'error');
+                }
+            } catch (error) {
+                document.getElementById('testResult').innerHTML = `
+                    <strong>Failed to get models</strong><br>
+                    Error: ${error.message}
+                `;
+                addLog('Failed to get models: ' + error.message, 'error');
+            }
+        }
+        
+        // Test direct access to Ollama
+        async function testOllamaDirect() {
+            addLog('Testing direct access to Ollama...', 'info');
+            window.open('http://localhost:11434', '_blank');
+        }
+        
+        // Add a message to the log
+        function addLog(message, type = 'info') {
+            const logOutput = document.getElementById('logOutput');
             const logEntry = document.createElement('div');
             logEntry.className = 'log-entry';
-            logEntry.textContent = `[${new Date().toLocaleString()}] ${result.type} Alert - Severity: ${result.severity}`;
-            document.getElementById('logOutput').prepend(logEntry);
-        });
-
-        // Sample alerts
-        document.querySelectorAll('.sampleBtn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                document.getElementById('alertData').value = 
-                    JSON.stringify(samples[btn.dataset.sample], null, 2);
-            });
-        });
+            
+            const now = new Date();
+            const timestamp = now.toLocaleTimeString();
+            logEntry.innerHTML = `<span class="timestamp">[${timestamp}]</span> <span class="log-${type}">${message}</span>`;
+            
+            logOutput.appendChild(logEntry);
+            logOutput.scrollTop = logOutput.scrollHeight;
+        }
     </script>
 </body>
 </html>

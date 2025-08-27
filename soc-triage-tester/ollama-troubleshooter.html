@@ -1,0 +1,811 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ollama Connection Troubleshooter</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #4361ee;
+            --secondary: #6c757d;
+            --success: #4cc9f0;
+            --danger: #f72585;
+            --warning: #fca311;
+            --info: #4895ef;
+            --light: #f8f9fa;
+            --dark: #212529;
+            --background: #f1faee;
+            --card-bg: #ffffff;
+            --border: #dee2e6;
+            --code-bg: #2b2d42;
+        }
+        
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #f1faee 0%, #e6f2ff 100%);
+            color: var(--dark);
+            line-height: 1.6;
+            padding: 20px;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: linear-gradient(120deg, var(--primary) 0%, var(--info) 100%);
+            border-radius: 12px;
+            color: white;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+        
+        .subtitle {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+        
+        .status-container {
+            display: flex;
+            justify-content: center;
+            margin: 20px 0;
+        }
+        
+        .status-indicator {
+            display: inline-flex;
+            align-items: center;
+            padding: 12px 24px;
+            border-radius: 30px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            background: white;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        .status-online {
+            color: var(--success);
+        }
+        
+        .status-offline {
+            color: var(--danger);
+        }
+        
+        .status-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 10px;
+        }
+        
+        .status-online .status-dot {
+            background-color: var(--success);
+            box-shadow: 0 0 10px var(--success);
+        }
+        
+        .status-offline .status-dot {
+            background-color: var(--danger);
+            box-shadow: 0 0 10px var(--danger);
+        }
+        
+        .panel-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+        
+        @media (max-width: 900px) {
+            .panel-container {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .panel {
+            background-color: var(--card-bg);
+            border-radius: 12px;
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.08);
+            padding: 25px;
+            transition: transform 0.3s ease;
+        }
+        
+        .panel:hover {
+            transform: translateY(-5px);
+        }
+        
+        .panel h2 {
+            margin-bottom: 20px;
+            color: var(--primary);
+            padding-bottom: 12px;
+            border-bottom: 2px solid var(--primary);
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+        }
+        
+        .panel h2 i {
+            margin-right: 10px;
+        }
+        
+        .troubleshooting-steps {
+            margin-bottom: 20px;
+        }
+        
+        .step {
+            display: flex;
+            align-items: flex-start;
+            margin-bottom: 20px;
+            padding: 20px;
+            border-radius: 10px;
+            background: linear-gradient(to right, #f8f9fa 0%, #ffffff 100%);
+            border-left: 5px solid var(--info);
+            box-shadow: 0 3px 8px rgba(0, 0, 0, 0.05);
+        }
+        
+        .step-number {
+            background-color: var(--info);
+            color: white;
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            margin-right: 20px;
+            flex-shrink: 0;
+            font-size: 1.2rem;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        .step-content {
+            flex-grow: 1;
+        }
+        
+        .step-title {
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: var(--dark);
+            font-size: 1.1rem;
+        }
+        
+        .code-block {
+            background-color: var(--code-bg);
+            color: #e9ecef;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: 'Fira Code', 'Courier New', monospace;
+            margin: 12px 0;
+            overflow-x: auto;
+            line-height: 1.5;
+            font-size: 0.95rem;
+            border-left: 4px solid var(--primary);
+        }
+        
+        .code-block code {
+            display: block;
+        }
+        
+        .btn {
+            background: linear-gradient(to right, var(--primary) 0%, var(--info) 100%);
+            color: white;
+            border: none;
+            padding: 14px 25px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 12px;
+            margin-bottom: 12px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+        }
+        
+        .btn:active {
+            transform: translateY(0);
+        }
+        
+        .btn i {
+            margin-right: 8px;
+        }
+        
+        .btn-success {
+            background: linear-gradient(to right, var(--success) 0%, #3a86ff 100%);
+        }
+        
+        .btn-warning {
+            background: linear-gradient(to right, var(--warning) 0%, #f3722c 100%);
+        }
+        
+        .btn-danger {
+            background: linear-gradient(to right, var(--danger) 0%, #f72585 100%);
+        }
+        
+        .log-container {
+            margin-top: 30px;
+            max-height: 300px;
+            overflow-y: auto;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            background-color: var(--card-bg);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        }
+        
+        .log-header {
+            padding: 16px 20px;
+            background: linear-gradient(to right, var(--primary) 0%, var(--info) 100%);
+            border-bottom: 1px solid var(--border);
+            font-weight: 600;
+            color: white;
+            position: sticky;
+            top: 0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .log-header i {
+            margin-right: 10px;
+        }
+        
+        .log-actions {
+            display: flex;
+        }
+        
+        .log-actions button {
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 4px;
+            margin-left: 10px;
+            cursor: pointer;
+        }
+        
+        .log-entry {
+            padding: 12px 20px;
+            border-bottom: 1px solid var(--border);
+            font-family: 'Fira Code', 'Courier New', monospace;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+        }
+        
+        .log-entry:last-child {
+            border-bottom: none;
+        }
+        
+        .log-entry:nth-child(odd) {
+            background-color: rgba(0, 0, 0, 0.02);
+        }
+        
+        .timestamp {
+            color: var(--secondary);
+            margin-right: 15px;
+            font-weight: 500;
+            min-width: 90px;
+        }
+        
+        .log-info {
+            color: var(--info);
+        }
+        
+        .log-success {
+            color: var(--success);
+        }
+        
+        .log-error {
+            color: var(--danger);
+        }
+        
+        .log-warning {
+            color: var(--warning);
+        }
+        
+        .test-area {
+            background: linear-gradient(to right, #f8f9fa 0%, #ffffff 100%);
+            border-radius: 12px;
+            padding: 25px;
+            margin-top: 25px;
+            border: 1px solid var(--border);
+        }
+        
+        .test-area h3 {
+            margin-bottom: 20px;
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+        }
+        
+        .test-area h3 i {
+            margin-right: 10px;
+        }
+        
+        .test-result {
+            margin-top: 20px;
+            padding: 20px;
+            border-radius: 10px;
+            background-color: white;
+            border-left: 5px solid var(--info);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+        }
+        
+        .test-result.success {
+            border-left: 5px solid var(--success);
+        }
+        
+        .test-result.error {
+            border-left: 5px solid var(--danger);
+        }
+        
+        .test-result.warning {
+            border-left: 5px solid var(--warning);
+        }
+        
+        .solution-box {
+            background: linear-gradient(to right, #e6f7ff 0%, #f0f9eb 100%);
+            border-radius: 10px;
+            padding: 20px;
+            margin: 25px 0;
+            border-left: 5px solid var(--success);
+        }
+        
+        .solution-box h4 {
+            color: var(--success);
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .solution-box h4 i {
+            margin-right: 10px;
+        }
+        
+        .footer {
+            text-align: center;
+            margin-top: 40px;
+            padding: 20px;
+            color: var(--secondary);
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1><i class="fas fa-network-wired"></i> Ollama Connection Troubleshooter</h1>
+            <p class="subtitle">Diagnose and fix "Failed to fetch" errors with your Ollama setup</p>
+            
+            <div class="status-container">
+                <div id="status" class="status-indicator status-offline">
+                    <span class="status-dot"></span>
+                    <span>Checking Connection Status...</span>
+                </div>
+            </div>
+        </header>
+        
+        <div class="panel-container">
+            <div class="panel">
+                <h2><i class="fas fa-wrench"></i> Troubleshooting Steps</h2>
+                
+                <div class="troubleshooting-steps">
+                    <div class="step">
+                        <div class="step-number">1</div>
+                        <div class="step-content">
+                            <div class="step-title">Verify Ollama is Running</div>
+                            <p>First, check if Ollama is running on your system:</p>
+                            <div class="code-block">
+                                <code># Check Ollama status<br>ollama serve</code>
+                            </div>
+                            <p>Or if it's already running, check its status with:</p>
+                            <div class="code-block">
+                                <code># List available models<br>ollama list</code>
+                            </div>
+                            <button class="btn" onclick="testOllama()">
+                                <i class="fas fa-plug"></i> Test Connection
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="step">
+                        <div class="step-number">2</div>
+                        <div class="step-content">
+                            <div class="step-title">Check Ollama Accessibility</div>
+                            <p>Open a new tab and visit: <a href="http://localhost:11434" target="_blank">http://localhost:11434</a></p>
+                            <p>If you see a message like "Ollama is running", then Ollama is working but there might be a CORS issue.</p>
+                            <button class="btn" onclick="testOllamaDirect()">
+                                <i class="fas fa-external-link-alt"></i> Test Direct Access
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="step">
+                        <div class="step-number">3</div>
+                        <div class="step-content">
+                            <div class="step-title">Fix CORS Issues</div>
+                            <p>Ollama might be blocking requests from the browser. Try running Ollama with CORS enabled:</p>
+                            <div class="code-block">
+                                <code># On Linux/Mac<br>OLLAMA_ORIGINS="*" ollama serve</code>
+                            </div>
+                            <div class="code-block">
+                                <code># On Windows Command Prompt<br>set OLLAMA_ORIGINS=*<br>ollama serve</code>
+                            </div>
+                            <div class="code-block">
+                                <code># On Windows PowerShell<br>$env:OLLAMA_ORIGINS="*"<br>ollama serve</code>
+                            </div>
+                            <button class="btn btn-warning" onclick="testWithCors()">
+                                <i class="fas fa-unlock"></i> Test with CORS
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="panel">
+                <h2><i class="fas fa-cogs"></i> Advanced Solutions</h2>
+                
+                <div class="troubleshooting-steps">
+                    <div class="step">
+                        <div class="step-number">4</div>
+                        <div class="step-content">
+                            <div class="step-title">Install or Update Ollama</div>
+                            <p>If Ollama isn't installed, download and install it:</p>
+                            <div class="code-block">
+                                <code># Visit the official website<br>https://ollama.ai/</code>
+                            </div>
+                            <p>Or update your existing installation:</p>
+                            <div class="code-block">
+                                <code># On Linux/Mac<br>curl -fsSL https://ollama.ai/install.sh | sh</code>
+                            </div>
+                            <button class="btn" onclick="visitOllamaWebsite()">
+                                <i class="fas fa-download"></i> Download Ollama
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="step">
+                        <div class="step-number">5</div>
+                        <div class="step-content">
+                            <div class="step-title">Pull a Model</div>
+                            <p>If you don't have any models, you need to pull one first:</p>
+                            <div class="code-block">
+                                <code># Pull a model (this may take a while)<br>ollama pull llama3:8b-instruct-q4_0</code>
+                            </div>
+                            <p>Other popular models:</p>
+                            <div class="code-block">
+                                <code># Code-specific model<br>ollama pull codellama:7b<br><br># Larger model<br>ollama pull llama3:70b-instruct-q4_0</code>
+                            </div>
+                            <button class="btn btn-success" onclick="testModels()">
+                                <i class="fas fa-list"></i> Test Available Models
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="step">
+                        <div class="step-number">6</div>
+                        <div class="step-content">
+                            <div class="step-title">Try a Different Port</div>
+                            <p>If port 11434 is already in use, you can change the port:</p>
+                            <div class="code-block">
+                                <code># Run Ollama on a different port<br>OLLAMA_HOST=0.0.0.0:11435 ollama serve</code>
+                            </div>
+                            <p>Then update your API calls to use port 11435.</p>
+                            <button class="btn btn-danger" onclick="testDifferentPort()">
+                                <i class="fas fa-exchange-alt"></i> Test Different Port
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="test-area">
+            <h3><i class="fas fa-vial"></i> Connection Tests</h3>
+            <p>Run these tests to diagnose your connection issues:</p>
+            
+            <button class="btn" onclick="testOllama()">
+                <i class="fas fa-plug"></i> Test Basic Connection
+            </button>
+            <button class="btn btn-warning" onclick="testWithCors()">
+                <i class="fas fa-unlock"></i> Test with CORS
+            </button>
+            <button class="btn btn-success" onclick="testModels()">
+                <i class="fas fa-list"></i> Test Available Models
+            </button>
+            <button class="btn btn-danger" onclick="testDifferentPort()">
+                <i class="fas fa-exchange-alt"></i> Test Different Port
+            </button>
+            
+            <div id="testResult" class="test-result">
+                <p><i class="fas fa-info-circle"></i> Run a test to see results here.</p>
+            </div>
+            
+            <div class="solution-box">
+                <h4><i class="fas fa-lightbulb"></i> Most Likely Solution</h4>
+                <p>Based on the "Failed to fetch" error, the most likely issue is that Ollama is not running or is not accessible due to CORS restrictions.</p>
+                <p>Try this solution first:</p>
+                <div class="code-block">
+                    <code># Stop Ollama if it's running (Ctrl+C)<br># Then restart with CORS enabled<br>OLLAMA_ORIGINS="*" ollama serve</code>
+                </div>
+            </div>
+        </div>
+        
+        <div class="log-container">
+            <div class="log-header">
+                <div><i class="fas fa-history"></i> Activity Log</div>
+                <div class="log-actions">
+                    <button onclick="clearLog()"><i class="fas fa-trash"></i> Clear</button>
+                    <button onclick="exportLog()"><i class="fas fa-download"></i> Export</button>
+                </div>
+            </div>
+            <div id="logOutput">
+                <div class="log-entry">
+                    <span class="timestamp">[11:25:25 AM]</span>
+                    <span class="log-info">Make sure Ollama is running on http://localhost:11434</span>
+                </div>
+                <div class="log-entry">
+                    <span class="timestamp">[11:25:43 AM]</span>
+                    <span class="log-info">Submitting network alert for analysis ...</span>
+                </div>
+                <div class="log-entry">
+                    <span class="timestamp">[11:25:43 AM]</span>
+                    <span class="log-error">Analysis failed: Failed to fetch</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p>Ollama Connection Troubleshooter • Created to help fix "Failed to fetch" errors</p>
+            <p>If problems persist, check the <a href="https://github.com/ollama/ollama" target="_blank">Ollama GitHub repository</a> for support.</p>
+        </div>
+    </div>
+
+    <script>
+        // Initialize the application
+        document.addEventListener('DOMContentLoaded', function() {
+            addLog('Ollama connection troubleshooter loaded', 'info');
+            checkOllamaStatus();
+        });
+        
+        // Check if Ollama is running
+        async function checkOllamaStatus() {
+            try {
+                const response = await fetch('http://localhost:11434/api/tags', {
+                    method: 'GET'
+                });
+                
+                if (response.ok) {
+                    document.getElementById('status').textContent = 'Ollama Online';
+                    document.getElementById('status').className = 'status-indicator status-online';
+                    addLog('Ollama is running and accessible', 'success');
+                    return true;
+                }
+            } catch (error) {
+                document.getElementById('status').textContent = 'Ollama Offline';
+                document.getElementById('status').className = 'status-indicator status-offline';
+                addLog('Ollama is not accessible: ' + error.message, 'error');
+            }
+            return false;
+        }
+        
+        // Test basic Ollama connection
+        async function testOllama() {
+            addLog('Testing Ollama connection...', 'info');
+            
+            try {
+                const response = await fetch('http://localhost:11434/api/tags');
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    document.getElementById('testResult').innerHTML = `
+                        <p class="success"><i class="fas fa-check-circle"></i> <strong>Connection successful!</strong></p>
+                        <p>Ollama is running and accessible.</p>
+                        ${data.models ? `<p>Available models: ${data.models.map(m => m.name).join(', ')}</p>` : ''}
+                    `;
+                    document.getElementById('testResult').className = 'test-result success';
+                    addLog('Ollama connection test passed', 'success');
+                    document.getElementById('status').textContent = 'Ollama Online';
+                    document.getElementById('status').className = 'status-indicator status-online';
+                } else {
+                    document.getElementById('testResult').innerHTML = `
+                        <p class="error"><i class="fas fa-times-circle"></i> <strong>Connection failed!</strong></p>
+                        <p>Status: ${response.status} ${response.statusText}</p>
+                        <p>Make sure Ollama is running on port 11434.</p>
+                    `;
+                    document.getElementById('testResult').className = 'test-result error';
+                    addLog(`Ollama connection test failed: ${response.status} ${response.statusText}`, 'error');
+                }
+            } catch (error) {
+                document.getElementById('testResult').innerHTML = `
+                    <p class="error"><i class="fas fa-times-circle"></i> <strong>Connection failed!</strong></p>
+                    <p>Error: ${error.message}</p>
+                    <p>This usually means Ollama is not running or not accessible due to CORS restrictions.</p>
+                `;
+                document.getElementById('testResult').className = 'test-result error';
+                addLog('Ollama connection test failed: ' + error.message, 'error');
+            }
+        }
+        
+        // Test with CORS proxy approach
+        async function testWithCors() {
+            addLog('Testing with CORS workaround...', 'info');
+            
+            try {
+                // Try to make a request with no-cors mode (limited but might work)
+                const response = await fetch('http://localhost:11434/api/tags', {
+                    mode: 'no-cors'
+                });
+                
+                document.getElementById('testResult').innerHTML = `
+                    <p class="warning"><i class="fas fa-exclamation-triangle"></i> <strong>CORS test completed</strong></p>
+                    <p>Even if this shows success, you may still need to configure Ollama with CORS support.</p>
+                    <p>Run: <code>OLLAMA_ORIGINS="*" ollama serve</code></p>
+                `;
+                document.getElementById('testResult').className = 'test-result warning';
+                addLog('CORS test completed - check result details', 'info');
+            } catch (error) {
+                document.getElementById('testResult').innerHTML = `
+                    <p class="error"><i class="fas fa-times-circle"></i> <strong>CORS test failed</strong></p>
+                    <p>Error: ${error.message}</p>
+                    <p>You need to configure Ollama with CORS support.</p>
+                    <p>Run: <code>OLLAMA_ORIGINS="*" ollama serve</code></p>
+                `;
+                document.getElementById('testResult').className = 'test-result error';
+                addLog('CORS test failed: ' + error.message, 'error');
+            }
+        }
+        
+        // Test available models
+        async function testModels() {
+            addLog('Testing available models...', 'info');
+            
+            try {
+                const response = await fetch('http://localhost:11434/api/tags');
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.models && data.models.length > 0) {
+                        document.getElementById('testResult').innerHTML = `
+                            <p class="success"><i class="fas fa-check-circle"></i> <strong>Models found!</strong></p>
+                            <p>Available models:</p>
+                            <ul>
+                                ${data.models.map(m => `<li>${m.name} (${m.size ? (m.size/1e9).toFixed(1) + 'GB' : 'size unknown'})</li>`).join('')}
+                            </ul>
+                        `;
+                        document.getElementById('testResult').className = 'test-result success';
+                        addLog(`Found ${data.models.length} models`, 'success');
+                    } else {
+                        document.getElementById('testResult').innerHTML = `
+                            <p class="warning"><i class="fas fa-exclamation-triangle"></i> <strong>No models found</strong></p>
+                            <p>You need to pull a model first.</p>
+                            <p>Try: <code>ollama pull llama3:8b-instruct-q4_0</code></p>
+                        `;
+                        document.getElementById('testResult').className = 'test-result warning';
+                        addLog('No models found in Ollama', 'warning');
+                    }
+                } else {
+                    document.getElementById('testResult').innerHTML = `
+                        <p class="error"><i class="fas fa-times-circle"></i> <strong>Failed to get models</strong></p>
+                        <p>Status: ${response.status} ${response.statusText}</p>
+                    `;
+                    document.getElementById('testResult').className = 'test-result error';
+                    addLog('Failed to get models: ' + response.status, 'error');
+                }
+            } catch (error) {
+                document.getElementById('testResult').innerHTML = `
+                    <p class="error"><i class="fas fa-times-circle"></i> <strong>Failed to get models</strong></p>
+                    <p>Error: ${error.message}</p>
+                    <p>This usually means Ollama is not running or not accessible.</p>
+                `;
+                document.getElementById('testResult').className = 'test-result error';
+                addLog('Failed to get models: ' + error.message, 'error');
+            }
+        }
+        
+        // Test direct access to Ollama
+        async function testOllamaDirect() {
+            addLog('Testing direct access to Ollama...', 'info');
+            window.open('http://localhost:11434', '_blank');
+        }
+        
+        // Test different port
+        async function testDifferentPort() {
+            addLog('Testing different port (11435)...', 'info');
+            
+            try {
+                const response = await fetch('http://localhost:11435/api/tags');
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    document.getElementById('testResult').innerHTML = `
+                        <p class="success"><i class="fas fa-check-circle"></i> <strong>Connection successful on port 11435!</strong></p>
+                        <p>Ollama is running on port 11435.</p>
+                        <p>Update your application to use this port.</p>
+                    `;
+                    document.getElementById('testResult').className = 'test-result success';
+                    addLog('Ollama is running on port 11435', 'success');
+                } else {
+                    document.getElementById('testResult').innerHTML = `
+                        <p class="error"><i class="fas fa-times-circle"></i> <strong>Connection failed on port 11435</strong></p>
+                        <p>Status: ${response.status} ${response.statusText}</p>
+                        <p>Ollama is not running on port 11435.</p>
+                    `;
+                    document.getElementById('testResult').className = 'test-result error';
+                    addLog('Ollama is not running on port 11435', 'error');
+                }
+            } catch (error) {
+                document.getElementById('testResult').innerHTML = `
+                    <p class="error"><i class="fas fa-times-circle"></i> <strong>Connection failed on port 11435</strong></p>
+                    <p>Error: ${error.message}</p>
+                    <p>Ollama is not running on port 11435.</p>
+                `;
+                document.getElementById('testResult').className = 'test-result error';
+                addLog('Connection failed on port 11435: ' + error.message, 'error');
+            }
+        }
+        
+        // Visit Ollama website
+        function visitOllamaWebsite() {
+            window.open('https://ollama.ai/', '_blank');
+        }
+        
+        // Add a message to the log
+        function addLog(message, type = 'info') {
+            const logOutput = document.getElementById('logOutput');
+            const logEntry = document.createElement('div');
+            logEntry.className = 'log-entry';
+            
+            const now = new Date();
+            const timestamp = now.toLocaleTimeString();
+            logEntry.innerHTML = `<span class="timestamp">[${timestamp}]</span> <span class="log-${type}">${message}</span>`;
+            
+            logOutput.appendChild(logEntry);
+            logOutput.scrollTop = logOutput.scrollHeight;
+        }
+        
+        // Clear log
+        function clearLog() {
+            const logOutput = document.getElementById('logOutput');
+            logOutput.innerHTML = '';
+            addLog('Log cleared', 'info');
+        }
+        
+        // Export log
+        function exportLog() {
+            const logOutput = document.getElementById('logOutput');
+            const logText = logOutput.innerText;
+            const blob = new Blob([logText], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'ollama-troubleshooter-log.txt';
+            a.click();
+            URL.revokeObjectURL(url);
+            addLog('Log exported', 'info');
+        }
+    </script>
+</body>
+</html>
