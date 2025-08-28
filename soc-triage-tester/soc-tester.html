@@ -387,6 +387,23 @@
         .json-null {
             color: var(--secondary);
         }
+
+        .ioc-match {
+            color: var(--danger);
+            font-weight: bold;
+        }
+
+        .confidence-high {
+            color: var(--success);
+        }
+
+        .confidence-medium {
+            color: var(--warning);
+        }
+
+        .confidence-low {
+            color: var(--secondary);
+        }
     </style>
 </head>
 <body>
@@ -394,7 +411,7 @@
         <header>
             <h1>SOC Alert Analysis Tester with Log Parser</h1>
             <p>Test security alerts and parse FortiGate logs in one integrated tool</p>
-            <div class="ollama-status offline" id="ollama-status">Ollama Offline</div>
+            <div class="ollama-status offline" id="ollama-status">Backend Offline</div>
         </header>
         
         <div class="tabs">
@@ -481,9 +498,9 @@
                         </div>
                         
                         <div class="analysis-section">
-                            <h3>Ollama Analysis</h3>
+                            <h3>Threat Intelligence Analysis</h3>
                             <div id="ollama-analysis" class="activity-log">
-                                <div class="log-entry">Ollama offline - using simulated analysis</div>
+                                <div class="log-entry">Backend offline - using simulated analysis</div>
                                 <div class="log-entry">Alert type: unknown</div>
                                 <div class="log-entry">Event: unknown</div>
                                 <div class="log-entry">Source IP: unknown</div>
@@ -625,6 +642,9 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
+            // Constants
+            const API_BASE_URL = 'http://localhost:3000/api';
+            
             // Tab functionality
             const tabs = document.querySelectorAll('.tab');
             const tabContents = document.querySelectorAll('.tab-content');
@@ -726,6 +746,22 @@
 }`
             };
             
+            // Check backend status
+            async function checkBackendStatus() {
+                try {
+                    const response = await fetch(`${API_BASE_URL}/health-simple`);
+                    if (response.ok) {
+                        document.getElementById('ollama-status').textContent = 'Backend Online';
+                        document.getElementById('ollama-status').className = 'ollama-status online';
+                    } else {
+                        throw new Error('Backend not healthy');
+                    }
+                } catch (error) {
+                    document.getElementById('ollama-status').textContent = 'Backend Offline';
+                    document.getElementById('ollama-status').className = 'ollama-status offline';
+                }
+            }
+            
             // File upload handling for SOC Tester
             fileUploadSoc.addEventListener('click', () => {
                 fileInputSoc.click();
@@ -814,18 +850,15 @@
             });
             
             // Submit alert handler
-            submitButton.addEventListener('click', () => {
+            submitButton.addEventListener('click', async () => {
                 const alertData = document.getElementById('alert-data').value;
                 
                 try {
                     const alertJson = JSON.parse(alertData);
-                    addLogEntry('Submitting alert for analysis ...');
+                    addLogEntry('Submitting alert for threat intelligence analysis ...');
                     
-                    // Simulate analysis delay
-                    setTimeout(() => {
-                        analyzeAlert(alertJson);
-                        addLogEntry('Analysis complete');
-                    }, 2000);
+                    // Call the new analyzeAlert function
+                    await analyzeAlert(alertJson);
                     
                 } catch (e) {
                     addLogEntry('Error: Invalid JSON format in alert data');
@@ -849,8 +882,8 @@
                 downloadJSON(parsedData, 'parsed_fortigate_logs.json');
             });
             
-            // Analyze the alert
-            function analyzeAlert(alert) {
+            // Analyze the alert using threat intelligence API
+            async function analyzeAlert(alert) {
                 resultsPlaceholder.style.display = 'none';
                 analysisResults.style.display = 'block';
                 
@@ -861,11 +894,135 @@
                     parsedAlert.innerHTML = syntaxHighlight(JSON.stringify(parsedAlertData, null, 2));
                 }
                 
+                // Show loading state
+                threatAssessment.innerHTML = 'Analyzing with Threat Intelligence...';
+                severityBadges.innerHTML = '<div class="severity-badge medium">Analyzing...</div>';
+                recommendedActions.innerHTML = '<ul><li>Processing threat intelligence...</li></ul>';
+                ollamaAnalysis.innerHTML = '<div class="log-entry">Connecting to threat intelligence service...</div>';
+
+                try {
+                    // Send to threat intelligence API
+                    const response = await fetch(`${API_BASE_URL}/threat-intel/analyze`, {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify(parsedAlertData)
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`Threat Intel API returned ${response.status}`);
+                    }
+
+                    const analysisResult = await response.json();
+
+                    // Update UI with threat intelligence results
+                    updateThreatIntelUI(analysisResult, parsedAlertData);
+                    
+                    addLogEntry('Threat intelligence analysis complete');
+
+                } catch (error) {
+                    console.error('Threat intel API failed:', error);
+                    threatAssessment.innerHTML = 'Threat Intel Unavailable - Using Basic Analysis';
+                    ollamaAnalysis.innerHTML = `
+                        <div class="log-entry">Error: ${error.message}</div>
+                        <div class="log-entry">Falling back to basic analysis</div>
+                    `;
+                    
+                    // Fallback to simulated analysis
+                    simulateAnalysis(alert, parsedAlertData);
+                    addLogEntry('Threat intel failed, used basic analysis');
+                }
+            }
+            
+            // Update UI with threat intelligence results
+            function updateThreatIntelUI(analysisResult, alertData) {
+                // Update threat assessment
+                const verdict = analysisResult.verdict?.toUpperCase() || 'UNKNOWN';
+                const confidence = analysisResult.confidence ? Math.round(analysisResult.confidence * 100) : 'N/A';
+                threatAssessment.innerHTML = `Threat Assessment: <strong>${verdict}</strong> (${confidence}% confidence)`;
+                
+                // Update severity badge
+                let severityClass = 'medium';
+                if (verdict.includes('MALICIOUS')) severityClass = 'critical';
+                else if (verdict.includes('SUSPICIOUS')) severityClass = 'high';
+                else if (verdict.includes('BENIGN')) severityClass = 'low';
+                
+                severityBadges.innerHTML = `
+                    <div class="severity-badge ${severityClass}">${verdict}</div>
+                `;
+                
+                // Update recommended actions
+                recommendedActions.innerHTML = '';
+                const actionsList = document.createElement('ul');
+                
+                const actions = analysisResult.ai_analysis?.recommendations || 
+                               analysisResult.recommendedActions || [
+                    'Review alert details thoroughly',
+                    'Monitor for similar activity',
+                    'Check system logs for related events'
+                ];
+                
+                actions.forEach(action => {
+                    const li = document.createElement('li');
+                    li.textContent = action;
+                    actionsList.appendChild(li);
+                });
+                recommendedActions.appendChild(actionsList);
+                
+                // Update threat intelligence analysis display
+                ollamaAnalysis.innerHTML = '';
+                
+                // Add verdict and confidence
+                const verdictEntry = document.createElement('div');
+                verdictEntry.className = 'log-entry';
+                verdictEntry.innerHTML = `<span class="ioc-match">AI Verdict:</span> ${verdict} (<span class="confidence-high">${confidence}% confidence</span>)`;
+                ollamaAnalysis.appendChild(verdictEntry);
+                
+                // Add matched IOCs if any
+                if (analysisResult.matched_iocs && analysisResult.matched_iocs.length > 0) {
+                    const iocEntry = document.createElement('div');
+                    iocEntry.className = 'log-entry';
+                    iocEntry.innerHTML = `<span class="ioc-match">Matched IOCs:</span> ${analysisResult.matched_iocs.join(', ')}`;
+                    ollamaAnalysis.appendChild(iocEntry);
+                }
+                
+                // Add threat score if available
+                if (analysisResult.threatScore) {
+                    const scoreEntry = document.createElement('div');
+                    scoreEntry.className = 'log-entry';
+                    scoreEntry.innerHTML = `<span class="ioc-match">Threat Score:</span> ${analysisResult.threatScore}`;
+                    ollamaAnalysis.appendChild(scoreEntry);
+                }
+                
+                // Add correlation info if available
+                if (analysisResult.correlation) {
+                    const corrEntry = document.createElement('div');
+                    corrEntry.className = 'log-entry';
+                    corrEntry.innerHTML = `<span class="ioc-match">Correlation:</span> ${analysisResult.correlation.totalRelated} related events found`;
+                    ollamaAnalysis.appendChild(corrEntry);
+                }
+                
+                // Add reasoning if available
+                if (analysisResult.ai_analysis?.reasoning) {
+                    const reasonEntry = document.createElement('div');
+                    reasonEntry.className = 'log-entry';
+                    reasonEntry.innerHTML = `<span class="ioc-match">Reasoning:</span> ${analysisResult.ai_analysis.reasoning}`;
+                    ollamaAnalysis.appendChild(reasonEntry);
+                }
+                
+                // Add timestamp
+                const timeEntry = document.createElement('div');
+                timeEntry.className = 'log-entry';
+                timeEntry.textContent = `Analysis completed: ${new Date().toLocaleTimeString()}`;
+                ollamaAnalysis.appendChild(timeEntry);
+            }
+            
+            // Simulated analysis as fallback
+            function simulateAnalysis(alert, parsedAlertData) {
                 // Determine threat type based on alert content
                 let threatType = 'Unknown Threat';
                 let severity = 'medium';
                 let actions = ['Review the alert details', 'Monitor for further activity'];
-                
+
                 if ((alert.event && alert.event.includes('auth-failed')) || 
                     (alert['Event Type'] && alert['Event Type'].includes('auth'))) {
                     threatType = 'Brute Force Attack';
@@ -925,22 +1082,14 @@
                 });
                 recommendedActions.appendChild(actionsList);
                 
-                // Simulate Ollama analysis
+                // Simulate AI analysis
                 ollamaAnalysis.innerHTML = `
-                    <div class="log-entry">Ollama offline - using simulated analysis</div>
+                    <div class="log-entry">Backend offline - using simulated analysis</div>
                     <div class="log-entry">Alert type: ${alert.type || alert['Event Type'] || 'unknown'}</div>
                     <div class="log-entry">Event: ${alert.event || alert['Event Name'] || 'unknown'}</div>
                     <div class="log-entry">Source IP: ${alert.srcip || parsedAlertData.srcip || 'unknown'}</div>
                     <div class="log-entry">Confidence: 85%</div>
                 `;
-                
-                // Add to analysis history
-                addToAnalysisHistory({
-                    alert: alert,
-                    threatType: threatType,
-                    severity: severity,
-                    timestamp: new Date().toISOString()
-                });
             }
             
             // Process the data for Log Parser
@@ -1115,7 +1264,7 @@
                 });
             }
             
-            // Initialize with sample data
+            // Initialize with sample data and check backend status
             sampleAlert.innerHTML = syntaxHighlight(JSON.stringify({
                 "Event Receive Time": "2025-06-19 17:34:21",
                 "Reporting IP": "172.20.0.1",
@@ -1159,6 +1308,9 @@
                 "apstatus": 0,
                 "msg": "AP Evvo-Staff 78:45:58:83:21:3a chan 6 live 8144911"
             }, null, 2));
+            
+            // Check backend status on load
+            checkBackendStatus();
         });
     </script>
 </body>

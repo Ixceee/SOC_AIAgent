@@ -1,31 +1,28 @@
 require('dotenv').config();
+const cors = require('cors');
 const express = require('express');
-const http = require('http'); // Changed from https to http
+const http = require('http');
 const fs = require('fs');
 const path = require('path');
 const morgan = require('morgan');
 const app = express();
 
-// Remove SSL certificate configuration since we're using HTTP
-// const sslDir = path.join(__dirname, 'ssl');
-// try {
-//   const privateKey = fs.readFileSync(path.join(sslDir, 'key.pem'), 'utf8');
-//   const certificate = fs.readFileSync(path.join(sslDir, 'cert.pem'), 'utf8');
-//   var credentials = { 
-//     key: privateKey, 
-//     cert: certificate,
-//     passphrase: process.env.SSL_PASSPHRASE || ''
-//   };
-// } catch (err) {
-//   console.error('SSL certificate error:', err);
-//   process.exit(1);
-// }
-
 // Middleware
+app.use(cors()); // ✅ CORS enabled
+app.options('*', cors());
 app.use(morgan('combined'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
+
+
+app.options('*', (req, res) => {
+  console.log('✅ Preflight OPTIONS request received');
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+  res.sendStatus(200);
+});
 
 // Request logging middleware
 app.use((req, res, next) => {
@@ -34,7 +31,6 @@ app.use((req, res, next) => {
 });
 
 // ================= DEBUG ROUTES =================
-// Add these right after middleware but before other routes
 app.get('/debug', (req, res) => {
   res.json({ 
     message: 'Debug endpoint working!',
@@ -52,7 +48,6 @@ app.get('/api/debug', (req, res) => {
   });
 });
 
-// Test direct health endpoint
 app.get('/api/health-simple', (req, res) => {
   res.json({ 
     status: 'healthy (simple)',
@@ -62,66 +57,84 @@ app.get('/api/health-simple', (req, res) => {
 });
 // ================= END DEBUG ROUTES =================
 
-// Import and mount routers
+// Import and mount routers - CORRECTED: No duplicate imports
 console.log('Loading routers...');
+
+// Helper function to create fallback router
+const createFallbackRouter = (routerName) => {
+  const router = express.Router();
+  router.post('/analyze', (req, res) => {
+    res.status(503).json({ 
+      error: `${routerName} service temporarily unavailable`,
+      message: 'This router failed to load properly'
+    });
+  });
+  return router;
+};
+
+// Load each router with error handling
 try {
   const networkRouter = require('./scripts/networkAI');
-  console.log('✓ Network router loaded');
+  app.use('/api/network', networkRouter);
+  console.log('✓ Network router loaded and mounted');
 } catch (error) {
   console.error('✗ Failed to load network router:', error.message);
+  app.use('/api/network', createFallbackRouter('Network'));
 }
 
 try {
   const endpointRouter = require('./scripts/endpointAI');
-  console.log('✓ Endpoint router loaded');
+  app.use('/api/endpoint', endpointRouter);
+  console.log('✓ Endpoint router loaded and mounted');
 } catch (error) {
   console.error('✗ Failed to load endpoint router:', error.message);
+  app.use('/api/endpoint', createFallbackRouter('Endpoint'));
 }
 
 try {
   const appRouter = require('./scripts/appAI');
-  console.log('✓ App router loaded');
+  app.use('/api/app', appRouter);
+  console.log('✓ App router loaded and mounted');
 } catch (error) {
   console.error('✗ Failed to load app router:', error.message);
+  app.use('/api/app', createFallbackRouter('App'));
 }
 
 try {
   const threatIntelRouter = require('./scripts/threatIntelAI');
-  console.log('✓ Threat Intel router loaded');
+  app.use('/api/threat-intel', threatIntelRouter);
+  console.log('✓ Threat Intel router loaded and mounted');
 } catch (error) {
   console.error('✗ Failed to load threat intel router:', error.message);
+  app.use('/api/threat-intel', createFallbackRouter('Threat Intel'));
 }
-
-const networkRouter = require('./scripts/networkAI');
-const endpointRouter = require('./scripts/endpointAI');
-const appRouter = require('./scripts/appAI');
-const threatIntelRouter = require('./scripts/threatIntelAI');
-
-// Route mounting
-app.use('/api/network', networkRouter);
-app.use('/api/endpoint', endpointRouter);
-app.use('/api/app', appRouter);
-app.use('/api/threat-intel', threatIntelRouter);
 
 // Root endpoint
 app.get('/', (req, res) => {
   res.send('SOC AI Agent is running');
 });
 
-// Health check endpoint
+// Health check endpoint - FIXED: Handle Redis errors
 app.get('/api/health', async (req, res) => {
-  const redisStatus = await require('./scripts/unknownAI').ping();
-  
-  // Set proper headers for browser
-  res.setHeader('Content-Type', 'application/json');
-  
-  res.json({ 
-    status: 'healthy',
-    redis: redisStatus,
-    uptime: process.uptime(),
-    services: ['network', 'endpoint', 'app', 'threat-intel'],
-    timestamp: new Date().toISOString()
-  });
+  try {
+    const redisStatus = await require('./scripts/unknownAI').ping();
+    res.json({ 
+      status: 'healthy',
+      redis: redisStatus,
+      uptime: process.uptime(),
+      services: ['network', 'endpoint', 'app', 'threat-intel'],
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    res.json({ 
+      status: 'degraded',
+      redis: 'unavailable',
+      error: error.message,
+      uptime: process.uptime(),
+      services: ['network', 'endpoint', 'app', 'threat-intel'],
+      timestamp: new Date().toISOString()
+    });
+  }
 });
 
 app.get('/test', (req, res) => {
@@ -168,9 +181,9 @@ app.use('*', (req, res) => {
   });
 });
 
-// Create HTTP server (instead of HTTPS)
+// Create HTTP server
 const PORT = process.env.PORT || 3000;
-const server = http.createServer(app); // Removed credentials parameter
+const server = http.createServer(app);
 
 // Start server
 server.listen(PORT, '0.0.0.0', () => {
