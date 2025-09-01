@@ -643,7 +643,7 @@
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             // Constants
-            const API_BASE_URL = 'http://localhost:3000/api';
+            const API_BASE_URL = 'http://localhost:3000';
             
             // Tab functionality
             const tabs = document.querySelectorAll('.tab');
@@ -745,11 +745,30 @@
     "timestamp": "2025-08-27T01:28:47.5612"
 }`
             };
+
+            // Fetch with retry logic for rate limiting
+            async function fetchWithRetry(url, options, retries = 3) {
+                try {
+                    const response = await fetch(url, options);
+                    if (response.status === 429 && retries > 0) {
+                        console.log(`Rate limited, retrying in 2 seconds... (${retries} retries left)`);
+                        await new Promise(resolve => setTimeout(resolve, 2000));
+                        return fetchWithRetry(url, options, retries - 1);
+                    }
+                    return response;
+                } catch (error) {
+                    if (retries > 0) {
+                        await new Promise(resolve => setTimeout(resolve, 2000));
+                        return fetchWithRetry(url, options, retries - 1);
+                    }
+                    throw error;
+                }
+            }
             
             // Check backend status
             async function checkBackendStatus() {
                 try {
-                    const response = await fetch(`${API_BASE_URL}/health-simple`);
+                    const response = await fetch(`${API_BASE_URL}/api/health-simple`);
                     if (response.ok) {
                         document.getElementById('ollama-status').textContent = 'Backend Online';
                         document.getElementById('ollama-status').className = 'ollama-status online';
@@ -901,8 +920,19 @@
                 ollamaAnalysis.innerHTML = '<div class="log-entry">Connecting to threat intelligence service...</div>';
 
                 try {
-                    // Send to threat intelligence API
-                    const response = await fetch(`${API_BASE_URL}/threat-intel/analyze`, {
+                    // Determine the correct endpoint based on alert type
+                    let endpoint = '/api/threat-intel/analyze'; // default
+                    
+                    if (alert.type === 'endpoint' || alert['Event Type']?.includes('endpoint')) {
+                        endpoint = '/api/endpoint/analyze';
+                    } else if (alert.type === 'network' || alert['Event Type']?.includes('network')) {
+                        endpoint = '/api/network/analyze';
+                    } else if (alert.type === 'app' || alert['Event Type']?.includes('app')) {
+                        endpoint = '/api/app/analyze';
+                    }
+
+                    // Send to threat intelligence API with retry logic
+                    const response = await fetchWithRetry(`${API_BASE_URL}${endpoint}`, {
                         method: 'POST',
                         headers: {'Content-Type': 'application/json'},
                         body: JSON.stringify(parsedAlertData)
@@ -935,6 +965,16 @@
             
             // Update UI with threat intelligence results
             function updateThreatIntelUI(analysisResult, alertData) {
+                // Your backend returns analysisResult with this structure:
+                // {
+                //   verdict: "suspicious_low_confidence",
+                //   confidence: 0.3,
+                //   matched_iocs: ["malicious_ip:192.168.1.100"],
+                //   local_analysis: {...},
+                //   ai_analysis: {...},
+                //   extracted_iocs: {...}
+                // }
+                
                 // Update threat assessment
                 const verdict = analysisResult.verdict?.toUpperCase() || 'UNKNOWN';
                 const confidence = analysisResult.confidence ? Math.round(analysisResult.confidence * 100) : 'N/A';
@@ -954,8 +994,9 @@
                 recommendedActions.innerHTML = '';
                 const actionsList = document.createElement('ul');
                 
+                // Use AI analysis recommendations if available, otherwise fallback
                 const actions = analysisResult.ai_analysis?.recommendations || 
-                               analysisResult.recommendedActions || [
+                               analysisResult.local_analysis?.recommendations || [
                     'Review alert details thoroughly',
                     'Monitor for similar activity',
                     'Check system logs for related events'
@@ -985,23 +1026,18 @@
                     ollamaAnalysis.appendChild(iocEntry);
                 }
                 
-                // Add threat score if available
-                if (analysisResult.threatScore) {
-                    const scoreEntry = document.createElement('div');
-                    scoreEntry.className = 'log-entry';
-                    scoreEntry.innerHTML = `<span class="ioc-match">Threat Score:</span> ${analysisResult.threatScore}`;
-                    ollamaAnalysis.appendChild(scoreEntry);
+                // Add extracted IOCs if available
+                if (analysisResult.extracted_iocs) {
+                    const iocs = analysisResult.extracted_iocs;
+                    if (iocs.ips && iocs.ips.length > 0) {
+                        const ipEntry = document.createElement('div');
+                        ipEntry.className = 'log-entry';
+                        ipEntry.innerHTML = `<span class="ioc-match">Extracted IPs:</span> ${iocs.ips.join(', ')}`;
+                        ollamaAnalysis.appendChild(ipEntry);
+                    }
                 }
                 
-                // Add correlation info if available
-                if (analysisResult.correlation) {
-                    const corrEntry = document.createElement('div');
-                    corrEntry.className = 'log-entry';
-                    corrEntry.innerHTML = `<span class="ioc-match">Correlation:</span> ${analysisResult.correlation.totalRelated} related events found`;
-                    ollamaAnalysis.appendChild(corrEntry);
-                }
-                
-                // Add reasoning if available
+                // Add reasoning if available from AI analysis
                 if (analysisResult.ai_analysis?.reasoning) {
                     const reasonEntry = document.createElement('div');
                     reasonEntry.className = 'log-entry';
