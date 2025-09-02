@@ -754,9 +754,12 @@ class ThreatIntelAI {
         }
       }
 
-      if (results.confidence > 0.7) {
-        results.verdict = 'malicious';
-        results.severity = 'high';
+      if (confidence > 0.7) {
+        verdict = 'malicious';
+        // DON'T overwrite severity if it's already set to critical
+        if (severity !== 'critical') {
+          severity = 'high';
+        }
       } else if (results.confidence > 0.3) {
         results.verdict = 'suspicious';
         results.severity = 'medium';
