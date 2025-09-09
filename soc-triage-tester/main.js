@@ -1,33 +1,50 @@
-const { app, BrowserWindow, ipcMain } = require('electron');
-const axios = require('axios');
-require('dotenv').config();
+const { app, BrowserWindow } = require('electron');
+const path = require('path');
+const express = require('express');
 
-let mainWindow;
+// Express Server Setup
+const apiServer = express();
+const PORT = 3001; // Different from Electron's port
 
+// Middleware
+apiServer.use(require('cors')());
+apiServer.use(require('helmet')());
+apiServer.use(express.json());
+
+// Import Routers
+const alertRouter = require('./routes/alertRoutes');
+const networkRouter = require('./routes/networkRoutes');
+const endpointRouter = require('./routes/endpointRoutes');
+
+// Mount Routers
+apiServer.use('/api/alerts', alertRouter);
+apiServer.use('/api/network', networkRouter);
+apiServer.use('/api/endpoint', endpointRouter);
+
+// Start Express Server
+apiServer.listen(PORT, () => {
+  console.log(`API Server running on http://localhost:${PORT}`);
+});
+
+// Electron Window Setup
 function createWindow() {
-  mainWindow = new BrowserWindow({
-    width: 1000,
+  const win = new BrowserWindow({
+    width: 1200,
     height: 800,
     webPreferences: {
       nodeIntegration: true,
-      contextIsolation: false
+      contextIsolation: false,
+      enableRemoteModule: true
     }
   });
 
-  mainWindow.loadFile('index.html');
-}
-
-// API Communication
-ipcMain.handle('submit-alert', async (_, alert) => {
-  try {
-    const response = await axios.post(
-      process.env.API_URL || 'http://localhost:3000/api/analyze',
-      alert
-    );
-    return response.data;
-  } catch (error) {
-    return { error: error.message };
+  // Load your frontend
+  win.loadFile('renderer/index.html');
+  
+  // Open DevTools in development
+  if (process.env.NODE_ENV === 'development') {
+    win.webContents.openDevTools();
   }
-});
+}
 
 app.whenReady().then(createWindow);

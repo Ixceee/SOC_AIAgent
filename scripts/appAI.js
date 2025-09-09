@@ -2,17 +2,19 @@ const express = require('express');
 const router = express.Router();
 const axios = require('axios');
 
+// Constants
+const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
+
 /**
  * POST /api/app/analyze
- * @description Analyze rogue AP events using Claude AI
- * @body {Object} alert - The alert object containing original log data
+ * @description Analyze rogue AP events
  */
 router.post('/analyze', async (req, res) => {
   try {
     const alert = req.body;
     const log = alert.original || alert;
 
-    // Validate required fields
+    // Validation
     if (!log.bssid || !log.ssid) {
       return res.status(400).json({
         error: 'Missing required fields',
@@ -20,67 +22,40 @@ router.post('/analyze', async (req, res) => {
       });
     }
 
-    // Build the API request configuration (your original logic)
-    const requestConfig = {
-      method: "POST",
-      url: "https://api.anthropic.com/v1/messages",
+    // Claude API request
+    const response = await axios.post('https://api.anthropic.com/v1/messages', {
+      model: "claude-3-sonnet-20240229",
+      max_tokens: 1000,
+      messages: [{
+        role: "user",
+        content: `Analyze rogue AP event (${log.bssid}) and return JSON: {
+          threat_level: string,
+          recommended_actions: string[]
+        }`
+      }],
+      response_format: { type: "json_object" }
+    }, {
       headers: {
-        "x-api-key": process.env.ANTHROPIC_API_KEY,
+        "x-api-key": ANTHROPIC_API_KEY,
         "anthropic-version": "2023-06-01",
         "Content-Type": "application/json"
-      },
-      data: {  // Using 'data' instead of 'body' for axios
-        model: "claude-3-sonnet-20240229",
-        max_tokens: 1000,
-        messages: [{
-          role: "user",
-          content: `Analyze rogue AP event:
-          - AP: ${log.bssid} (${log.ssid}) 
-          - Signal: ${log.signal}dBm 
-          - Vendor: ${log.manuf}
-          - Detection: ${log.sndetected}
-          
-          Provide JSON analysis:
-          {
-            "threat_level": "high|medium|low",
-            "ap_details": {
-              "bssid": string,
-              "ssid": string,
-              "vendor": string
-            },
-            "recommended_actions": string[],
-            "nearby_devices_at_risk": number
-          }`
-        }],
-        temperature: 0.2,
-        response_format: { type: "json_object" }
       }
-    };
+    });
 
-    // Make the API call
-    const response = await axios(requestConfig);
-    
-    // Return the analysis results
     res.json({
       status: 'success',
       data: response.data,
       metadata: {
-        analyzedAt: new Date().toISOString(),
-        alertId: alert.id || null
+        analyzedAt: new Date().toISOString()
       }
     });
 
   } catch (error) {
-    console.error('Analysis failed:', error);
-    
-    // Handle different error scenarios
+    console.error('App analysis failed:', error);
     const statusCode = error.response?.status || 500;
-    const errorMessage = error.response?.data?.error?.message || error.message;
-    
     res.status(statusCode).json({
       status: 'error',
-      message: errorMessage,
-      details: statusCode === 500 ? undefined : error.response?.data
+      message: error.response?.data?.error?.message || error.message
     });
   }
 });

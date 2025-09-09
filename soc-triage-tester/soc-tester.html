@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SOC Alert Analysis Tester with Log Parser</title>
+    <title>SOC Alert Analysis Dashboard</title>
     <style>
         :root {
             --primary: #0d6efd;
@@ -34,7 +34,7 @@
         }
         
         .container {
-            max-width: 1400px;
+            max-width: 1800px;
             margin: 0 auto;
         }
         
@@ -232,6 +232,7 @@
             margin-top: 15px;
             max-height: 200px;
             overflow-y: auto;
+            font-family: monospace;
         }
         
         .log-entry {
@@ -404,19 +405,254 @@
         .confidence-low {
             color: var(--secondary);
         }
+        
+        /* Dashboard Styles */
+        .alerts-dashboard {
+            display: block;
+            margin-top: 20px;
+            overflow-x: auto;
+        }
+        
+        .alerts-table {
+            width: 100%;
+            border-collapse: collapse;
+            background-color: var(--card-dark);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        
+        .alerts-table th {
+            background-color: #2d3035;
+            padding: 12px 15px;
+            text-align: left;
+            font-weight: bold;
+            color: var(--info);
+            position: sticky;
+            top: 0;
+        }
+        
+        .alerts-table td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #3a3f46;
+        }
+        
+        .alerts-table tr:last-child td {
+            border-bottom: none;
+        }
+        
+        .alerts-table tr:hover {
+            background-color: #2d3035;
+        }
+        
+        .alert-severity {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.8em;
+            font-weight: bold;
+        }
+        
+        .alert-severity.critical {
+            background-color: var(--danger);
+        }
+        
+        .alert-severity.high {
+            background-color: #fd7e14;
+        }
+        
+        .alert-severity.medium {
+            background-color: var(--warning);
+            color: var(--dark);
+        }
+        
+        .alert-severity.low {
+            background-color: var(--secondary);
+        }
+        
+        .alert-confidence {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 12px;
+            background-color: #3a3f46;
+            font-size: 0.8em;
+        }
+        
+        .alert-actions {
+            display: flex;
+            gap: 5px;
+        }
+        
+        .alert-actions button {
+            padding: 6px 10px;
+            font-size: 0.8em;
+            width: auto;
+        }
+        
+        .analysis-details {
+            max-width: 300px;
+        }
+        
+        .analysis-summary {
+            font-size: 0.9em;
+            margin-bottom: 8px;
+            line-height: 1.4;
+        }
+        
+        .analysis-recommendations {
+            font-size: 0.85em;
+            color: var(--secondary);
+        }
+        
+        .analysis-recommendations ul {
+            padding-left: 15px;
+            margin-top: 5px;
+        }
+        
+        .analysis-recommendations li {
+            margin-bottom: 3px;
+        }
+        
+        .ioc-list {
+            margin-top: 8px;
+        }
+        
+        .ioc-item {
+            display: inline-block;
+            background-color: #3a3f46;
+            padding: 2px 6px;
+            border-radius: 4px;
+            margin-right: 5px;
+            margin-bottom: 5px;
+            font-size: 0.75em;
+            color: var(--danger);
+        }
+        
+        .dashboard-controls {
+            display: flex;
+            gap: 10px;
+            margin: 15px 0;
+        }
+        
+        .dashboard-controls select,
+        .dashboard-controls input {
+            margin-bottom: 0;
+        }
+        
+        .dashboard-stats {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            margin: 20px 0;
+        }
+        
+        .dashboard-stat {
+            background-color: #2d3035;
+            border-radius: 5px;
+            padding: 15px;
+            text-align: center;
+        }
+        
+        .stat-icon {
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+        
+        .dashboard-filters {
+            display: flex;
+            gap: 10px;
+            margin: 15px 0;
+            flex-wrap: wrap;
+        }
+        
+        .filter-pill {
+            background-color: #2d3035;
+            padding: 8px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        
+        .filter-pill.active {
+            background-color: var(--primary);
+        }
+        
+        .filter-pill:hover {
+            background-color: #3a3f46;
+        }
+        
+        .empty-dashboard {
+            text-align: center;
+            padding: 40px;
+            color: var(--secondary);
+        }
+
+        .batch-controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .batch-controls button {
+            width: auto;
+            padding: 8px 15px;
+        }
+        
+        .timestamp {
+            font-size: 0.85em;
+            color: var(--secondary);
+        }
+        
+        /* Error styling */
+        .error-status {
+            background-color: var(--danger);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-size: 0.9em;
+            margin-top: 10px;
+        }
+        
+        .retry-button {
+            background-color: var(--warning);
+            color: var(--dark);
+            padding: 6px 12px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9em;
+            margin-top: 10px;
+        }
+        
+        .retry-button:hover {
+            background-color: #e0a800;
+        }
+        
+        .analysis-warning {
+            background-color: #664d03;
+            color: #ffda6a;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+            border-left: 4px solid var(--warning);
+        }
+        
+        .severity-badge.unknown {
+            background-color: #6c757d;
+            color: white;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <header>
-            <h1>SOC Alert Analysis Tester with Log Parser</h1>
-            <p>Test security alerts and parse FortiGate logs in one integrated tool</p>
+            <h1>SOC Alert Analysis Dashboard</h1>
+            <p>Monitor and analyze security alerts in a comprehensive dashboard view</p>
             <div class="ollama-status offline" id="ollama-status">Backend Offline</div>
         </header>
         
         <div class="tabs">
             <div class="tab active" data-tab="soc-tester">SOC Alert Tester</div>
-            <div class="tab" data-tab="log-parser">Log Parser</div>
+            <div class="tab" data-tab="dashboard">Alert Dashboard</div>
             <div class="tab" data-tab="analysis-results">Analysis Results</div>
         </div>
         
@@ -451,6 +687,11 @@
                     <div class="file-upload" id="file-upload-soc">
                         <p>Click to load test-data/logs.json or drag & drop file</p>
                         <input type="file" id="file-input-soc" accept=".json" style="display: none;">
+                    </div>
+                    
+                    <div class="batch-controls">
+                        <button id="analyze-all-btn" class="btn-warning">Analyze All Uploaded</button>
+                        <button id="clear-all-btn" class="btn-danger">Clear All</button>
                     </div>
                     
                     <div id="alert-list" class="alert-list">
@@ -520,7 +761,6 @@
             
             <div class="card">
                 <h2>Activity Log</h2>
-                <a href="http://tocatmostr.net" class="url">http://tocatmostr.net</a>
                 
                 <div class="activity-log" id="activity-log">
                     <div class="log-entry">[9:20:20 am] Loaded bruteforce sample</div>
@@ -529,79 +769,58 @@
             </div>
         </div>
         
-        <!-- Log Parser Tab -->
-        <div class="tab-content" id="log-parser">
-            <div class="dashboard">
-                <div class="card">
-                    <h2>Input Log Data</h2>
-                    
-                    <div class="file-upload" id="file-upload-parser">
-                        <p>Click to upload JSON file with logs or drag & drop file</p>
-                        <input type="file" id="file-input-parser" accept=".json" style="display: none;">
-                    </div>
-                    
-                    <textarea id="input-data" placeholder="Paste your log data here or upload a file"></textarea>
-                    
-                    <button id="parse-btn">Parse Log Data</button>
-                    <button id="download-btn" class="btn-success" disabled>Download Parsed Data</button>
-                    
-                    <div class="stats">
-                        <div class="stat-box">
-                            <div class="stat-value" id="total-alerts">0</div>
-                            <div class="stat-label">Total Alerts</div>
-                        </div>
-                        <div class="stat-box">
-                            <div class="stat-value" id="parsed-alerts">0</div>
-                            <div class="stat-label">Parsed Alerts</div>
-                        </div>
-                        <div class="stat-box">
-                            <div class="stat-value" id="unique-keys">0</div>
-                            <div class="stat-label">Unique Keys</div>
-                        </div>
-                    </div>
-                    
-                    <div class="progress">
-                        <div class="progress-bar" id="progress-bar" style="width: 0%">0%</div>
-                    </div>
-                </div>
-                
-                <div class="card">
-                    <h2>Parsed Results</h2>
-                    
-                    <div id="parser-results-placeholder">
-                        <p>Parsed results will appear here</p>
-                    </div>
-                    
-                    <div id="parsed-results" class="json-preview" style="display: none;"></div>
-                    
-                    <h3>Sample Parsed Alert</h3>
-                    <div id="sample-alert" class="json-preview"></div>
-                </div>
-            </div>
-            
+        <!-- Alert Dashboard Tab -->
+        <div class="tab-content" id="dashboard">
             <div class="card">
-                <h2>How It Works</h2>
-                <ol>
-                    <li>Upload a JSON file containing your FortiGate alerts or paste the JSON data directly</li>
-                    <li>Click "Parse Log Data" to extract all key-value pairs from the "Raw Event Log" field</li>
-                    <li>The parser will process each alert and create a new JSON structure with all fields expanded</li>
-                    <li>Download the parsed data as a JSON file for further analysis</li>
-                </ol>
+                <h2>Security Alerts Dashboard</h2>
                 
-                <h3>Example Transformation</h3>
-                <div class="json-preview">
-// Original:
-{
-  "Raw Event Log": "date=2025-06-19 time=17:34:21 devname=\"EvvoTevvo\" ..."
-}
-
-// Becomes:
-{
-  "date": "2025-06-19",
-  "time": "17:34:21",
-  "devname": "EvvoTevvo",
-  ...
-}
+                <div class="dashboard-stats">
+                    <div class="dashboard-stat">
+                        <div class="stat-icon">📊</div>
+                        <div class="stat-value" id="total-alerts-dash">0</div>
+                        <div class="stat-label">Total Alerts</div>
+                    </div>
+                    <div class="dashboard-stat">
+                        <div class="stat-icon">🔴</div>
+                        <div class="stat-value" id="critical-alerts">0</div>
+                        <div class="stat-label">Critical</div>
+                    </div>
+                    <div class="dashboard-stat">
+                        <div class="stat-icon">🟠</div>
+                        <div class="stat-value" id="high-alerts">0</div>
+                        <div class="stat-label">High</div>
+                    </div>
+                    <div class="dashboard-stat">
+                        <div class="stat-icon">🟢</div>
+                        <div class="stat-value" id="resolved-alerts">0</div>
+                        <div class="stat-label">Resolved</div>
+                    </div>
+                </div>
+                
+                <div class="dashboard-filters">
+                    <div class="filter-pill active" data-filter="all">All Alerts</div>
+                    <div class="filter-pill" data-filter="critical">Critical</div>
+                    <div class="filter-pill" data-filter="high">High</div>
+                    <div class="filter-pill" data-filter="medium">Medium</div>
+                    <div class="filter-pill" data-filter="low">Low</div>
+                </div>
+                
+                <div class="dashboard-controls">
+                    <select id="sort-alerts">
+                        <option value="newest">Newest First</option>
+                        <option value="oldest">Oldest First</option>
+                        <option value="severity">Severity (High to Low)</option>
+                    </select>
+                    <input type="text" id="search-dashboard" placeholder="Search alerts...">
+                    <button id="refresh-dashboard">Refresh</button>
+                    <button id="export-dashboard" class="btn-success">Export</button>
+                </div>
+                
+                <div class="alerts-dashboard" id="alerts-dashboard">
+                    <div class="empty-dashboard">
+                        <h3>No alerts analyzed yet</h3>
+                        <p>Submit alerts in the SOC Alert Tester tab to see them displayed here</p>
+                    </div>
                 </div>
             </div>
         </div>
@@ -681,20 +900,20 @@
             const recommendedActions = document.getElementById('recommended-actions');
             const ollamaAnalysis = document.getElementById('ollama-analysis');
             const parsedAlert = document.getElementById('parsed-alert');
+            const analyzeAllBtn = document.getElementById('analyze-all-btn');
+            const clearAllBtn = document.getElementById('clear-all-btn');
+            const exportDashboardBtn = document.getElementById('export-dashboard');
             
-            // Log Parser functionality
-            const fileUploadParser = document.getElementById('file-upload-parser');
-            const fileInputParser = document.getElementById('file-input-parser');
-            const inputData = document.getElementById('input-data');
-            const parseBtn = document.getElementById('parse-btn');
-            const downloadBtn = document.getElementById('download-btn');
-            const parsedResults = document.getElementById('parsed-results');
-            const parserResultsPlaceholder = document.getElementById('parser-results-placeholder');
-            const sampleAlert = document.getElementById('sample-alert');
-            const totalAlerts = document.getElementById('total-alerts');
-            const parsedAlerts = document.getElementById('parsed-alerts');
-            const uniqueKeys = document.getElementById('unique-keys');
-            const progressBar = document.getElementById('progress-bar');
+            // Dashboard functionality
+            const alertsDashboard = document.getElementById('alerts-dashboard');
+            const totalAlertsDash = document.getElementById('total-alerts-dash');
+            const criticalAlerts = document.getElementById('critical-alerts');
+            const highAlerts = document.getElementById('high-alerts');
+            const resolvedAlerts = document.getElementById('resolved-alerts');
+            const filterPills = document.querySelectorAll('.filter-pill');
+            const sortAlerts = document.getElementById('sort-alerts');
+            const searchDashboard = document.getElementById('search-dashboard');
+            const refreshDashboard = document.getElementById('refresh-dashboard');
             
             // Analysis Results functionality
             const analysisHistory = document.getElementById('analysis-history');
@@ -705,6 +924,8 @@
             let parsedData = [];
             let allKeys = new Set();
             let analysisHistoryData = [];
+            let dashboardAlerts = [];
+            let uploadedAlerts = [];
             
             // Sample alert data
             const sampleData = {
@@ -804,61 +1025,6 @@
                 }
             });
             
-            // File upload handling for Log Parser
-            fileUploadParser.addEventListener('click', () => {
-                fileInputParser.click();
-            });
-            
-            fileInputParser.addEventListener('change', (event) => {
-                const file = event.target.files[0];
-                if (file) {
-                    const reader = new FileReader();
-                    reader.onload = (e) => {
-                        try {
-                            inputData.value = e.target.result;
-                            addLogEntry(`Loaded data from ${file.name}`);
-                        } catch (error) {
-                            addLogEntry(`Error reading file: ${error.message}`);
-                        }
-                    };
-                    reader.readAsText(file);
-                }
-            });
-            
-            // Load alerts from JSON file for SOC Tester
-            function loadAlertsFromFile(logs) {
-                alertList.innerHTML = '';
-                
-                if (Array.isArray(logs)) {
-                    logs.forEach((log, index) => {
-                        const alertItem = document.createElement('div');
-                        alertItem.className = 'alert-item';
-                        alertItem.innerHTML = `
-                            <strong>Alert ${index + 1}</strong>
-                            <div class="alert-summary">${log.type || log['Event Type'] || 'Unknown'} - ${log.event || log['Event Name'] || 'Unknown'}</div>
-                        `;
-                        alertItem.addEventListener('click', () => {
-                            document.getElementById('alert-data').value = JSON.stringify(log, null, 2);
-                            addLogEntry(`Loaded alert ${index + 1} from file`);
-                        });
-                        alertList.appendChild(alertItem);
-                    });
-                } else {
-                    // Single alert object
-                    const alertItem = document.createElement('div');
-                    alertItem.className = 'alert-item';
-                    alertItem.innerHTML = `
-                        <strong>Alert</strong>
-                        <div class="alert-summary">${logs.type || logs['Event Type'] || 'Unknown'} - ${logs.event || logs['Event Name'] || 'Unknown'}</div>
-                    `;
-                    alertItem.addEventListener('click', () => {
-                        document.getElementById('alert-data').value = JSON.stringify(logs, null, 2);
-                        addLogEntry('Loaded alert from file');
-                    });
-                    alertList.appendChild(alertItem);
-                }
-            }
-            
             // Sample alert click handler
             sampleAlerts.forEach(sample => {
                 sample.addEventListener('click', () => {
@@ -885,21 +1051,130 @@
                 }
             });
             
-            // Parse button handler
-            parseBtn.addEventListener('click', () => {
-                try {
-                    const data = JSON.parse(inputData.value);
-                    processData(data);
-                } catch (error) {
-                    addLogEntry(`Error parsing JSON: ${error.message}`);
-                    alert('Invalid JSON format. Please check your data.');
+            // Analyze all uploaded alerts
+            analyzeAllBtn.addEventListener('click', async () => {
+                if (uploadedAlerts.length === 0) {
+                    addLogEntry('No uploaded alerts to analyze');
+                    return;
                 }
+                
+                addLogEntry(`Analyzing ${uploadedAlerts.length} uploaded alerts...`);
+                analyzeAllBtn.textContent = 'Analyzing...';
+                analyzeAllBtn.disabled = true;
+                
+                // Process each alert sequentially
+                for (let i = 0; i < uploadedAlerts.length; i++) {
+                    try {
+                        await analyzeAlert(uploadedAlerts[i]);
+                        addLogEntry(`Analyzed alert ${i+1} of ${uploadedAlerts.length}`);
+                    } catch (error) {
+                        addLogEntry(`Error analyzing alert ${i+1}: ${error.message}`);
+                    }
+                    
+                    // Small delay to avoid overwhelming the backend
+                    await new Promise(resolve => setTimeout(resolve, 500));
+                }
+                
+                addLogEntry(`Completed analysis of ${uploadedAlerts.length} alerts`);
+                analyzeAllBtn.textContent = 'Analyze All Uploaded';
+                analyzeAllBtn.disabled = false;
             });
             
-            // Download button handler
-            downloadBtn.addEventListener('click', () => {
-                downloadJSON(parsedData, 'parsed_fortigate_logs.json');
+            // Clear all alerts
+            clearAllBtn.addEventListener('click', () => {
+                uploadedAlerts = [];
+                alertList.innerHTML = '';
+                addLogEntry('Cleared all uploaded alerts');
             });
+            
+            // Export dashboard data
+            exportDashboardBtn.addEventListener('click', () => {
+                if (dashboardAlerts.length === 0) {
+                    addLogEntry('No alerts to export');
+                    return;
+                }
+                
+                const dataStr = JSON.stringify(dashboardAlerts, null, 2);
+                const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+                
+                const exportFileDefaultName = 'soc-alerts-export.json';
+                
+                const linkElement = document.createElement('a');
+                linkElement.setAttribute('href', dataUri);
+                linkElement.setAttribute('download', exportFileDefaultName);
+                linkElement.click();
+                
+                addLogEntry(`Exported ${dashboardAlerts.length} alerts`);
+            });
+            
+            // Dashboard filter handlers
+            filterPills.forEach(pill => {
+                pill.addEventListener('click', () => {
+                    const filter = pill.getAttribute('data-filter');
+                    
+                    // Update active filter
+                    filterPills.forEach(p => p.classList.remove('active'));
+                    pill.classList.add('active');
+                    
+                    // Update dashboard
+                    updateDashboard(filter);
+                });
+            });
+            
+            // Sort handler
+            sortAlerts.addEventListener('change', () => {
+                updateDashboard();
+            });
+            
+            // Search handler
+            searchDashboard.addEventListener('input', () => {
+                updateDashboard();
+            });
+            
+            // Refresh handler
+            refreshDashboard.addEventListener('click', () => {
+                updateDashboard();
+            });
+            
+            // Load alerts from JSON file for SOC Tester
+            function loadAlertsFromFile(logs) {
+                alertList.innerHTML = '';
+                
+                if (Array.isArray(logs)) {
+                    uploadedAlerts = [...logs];
+                    logs.forEach((log, index) => {
+                        const alertItem = document.createElement('div');
+                        alertItem.className = 'alert-item';
+                        alertItem.innerHTML = `
+                            <strong>Alert ${index + 1}</strong>
+                            <div class="alert-summary">${log.type || log['Event Type'] || 'Unknown'} - ${log.event || log['Event Name'] || 'Unknown'}</div>
+                        `;
+                        alertItem.addEventListener('click', () => {
+                            document.getElementById('alert-data').value = JSON.stringify(log, null, 2);
+                            addLogEntry(`Loaded alert ${index + 1} from file`);
+                        });
+                        alertList.appendChild(alertItem);
+                    });
+                } else {
+                    // Single alert object
+                    uploadedAlerts = [logs];
+                    const alertItem = document.createElement('div');
+                    alertItem.className = 'alert-item';
+                    alertItem.innerHTML = `
+                        <strong>Alert</strong>
+                        <div class="alert-summary">${logs.type || logs['Event Type'] || 'Unknown'} - ${logs.event || logs['Event Name'] || 'Unknown'}</div>
+                    `;
+                    alertItem.addEventListener('click', () => {
+                        document.getElementById('alert-data').value = JSON.stringify(logs, null, 2);
+                        addLogEntry('Loaded alert from file');
+                    });
+                    alertList.appendChild(alertItem);
+                }
+                
+                // Show the analyze all button
+                analyzeAllBtn.style.display = 'block';
+                clearAllBtn.style.display = 'block';
+            }
             
             // Analyze the alert using threat intelligence API
             async function analyzeAlert(alert) {
@@ -939,7 +1214,8 @@
                     });
 
                     if (!response.ok) {
-                        throw new Error(`Threat Intel API returned ${response.status}`);
+                        const errorText = await response.text();
+                        throw new Error(`Threat Intel API returned ${response.status}: ${errorText}`);
                     }
 
                     const analysisResult = await response.json();
@@ -947,62 +1223,340 @@
                     // Update UI with threat intelligence results
                     updateThreatIntelUI(analysisResult, parsedAlertData);
                     
+                    // Add to dashboard
+                    addAlertToDashboard(alert, analysisResult);
+                    
                     addLogEntry('Threat intelligence analysis complete');
 
                 } catch (error) {
                     console.error('Threat intel API failed:', error);
-                    threatAssessment.innerHTML = 'Threat Intel Unavailable - Using Basic Analysis';
-                    ollamaAnalysis.innerHTML = `
-                        <div class="log-entry">Error: ${error.message}</div>
-                        <div class="log-entry">Falling back to basic analysis</div>
-                    `;
+                    
+                    // Check if it's a backend error (ReferenceError)
+                    if (error.message.includes('ReferenceError') || error.message.includes('500')) {
+                        threatAssessment.innerHTML = 'Backend Error - Using Basic Analysis';
+                        ollamaAnalysis.innerHTML = `
+                            <div class="analysis-warning">
+                                <strong>Backend Error Detected:</strong> The threat intelligence service encountered an internal error.
+                                <div class="error-status">Error: ${error.message}</div>
+                                <button class="retry-button" onclick="retryAnalysis()">Retry Analysis</button>
+                            </div>
+                            <div class="log-entry">Falling back to basic analysis</div>
+                        `;
+                    } 
+                    // Check if it's a rate limiting error
+                    else if (error.message.includes('429')) {
+                        threatAssessment.innerHTML = 'Rate Limited - Using Basic Analysis';
+                        ollamaAnalysis.innerHTML = `
+                            <div class="analysis-warning">
+                                <strong>Rate Limited:</strong> The AI service is currently rate limiting requests.
+                                <div class="error-status">Error: ${error.message}</div>
+                                <button class="retry-button" onclick="retryAnalysis()">Retry Analysis</button>
+                            </div>
+                            <div class="log-entry">Falling back to basic analysis</div>
+                        `;
+                    }
+                    // Other errors
+                    else {
+                        threatAssessment.innerHTML = 'Threat Intel Unavailable - Using Basic Analysis';
+                        ollamaAnalysis.innerHTML = `
+                            <div class="analysis-warning">
+                                <strong>Connection Error:</strong> Could not connect to the threat intelligence service.
+                                <div class="error-status">Error: ${error.message}</div>
+                                <button class="retry-button" onclick="retryAnalysis()">Retry Analysis</button>
+                            </div>
+                            <div class="log-entry">Falling back to basic analysis</div>
+                        `;
+                    }
                     
                     // Fallback to simulated analysis
-                    simulateAnalysis(alert, parsedAlertData);
+                    const analysisResult = simulateAnalysis(alert, parsedAlertData);
+                    
+                    // Add to dashboard
+                    addAlertToDashboard(alert, analysisResult);
+                    
                     addLogEntry('Threat intel failed, used basic analysis');
                 }
             }
             
+            // Retry analysis function
+            window.retryAnalysis = function() {
+                const alertData = document.getElementById('alert-data').value;
+                try {
+                    const alertJson = JSON.parse(alertData);
+                    addLogEntry('Retrying analysis after error...');
+                    analyzeAlert(alertJson);
+                } catch (e) {
+                    addLogEntry('Error: Invalid JSON format in alert data');
+                }
+            };
+            
+            // Add alert to dashboard
+            function addAlertToDashboard(alert, analysisResult) {
+                // Create a dashboard alert object
+                const dashboardAlert = {
+                    id: Date.now() + Math.random().toString(36).substr(2, 9),
+                    timestamp: new Date().toISOString(),
+                    alert: alert,
+                    analysis: analysisResult,
+                    status: 'new'
+                };
+                
+                // Add to dashboard alerts array
+                dashboardAlerts.unshift(dashboardAlert);
+                
+                // Update dashboard
+                updateDashboard();
+                
+                // Update statistics
+                updateDashboardStats();
+            }
+            
+            // Update dashboard with alerts
+            function updateDashboard(filter = 'all') {
+                if (dashboardAlerts.length === 0) {
+                    alertsDashboard.innerHTML = `
+                        <div class="empty-dashboard">
+                            <h3>No alerts analyzed yet</h3>
+                            <p>Submit alerts in the SOC Alert Tester tab to see them displayed here</p>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                // Filter alerts
+                let filteredAlerts = [...dashboardAlerts];
+                
+                if (filter !== 'all') {
+                    filteredAlerts = filteredAlerts.filter(alert => {
+                        const severity = alert.analysis.verdict || 'medium';
+                        return severity.toLowerCase().includes(filter);
+                    });
+                }
+                
+                // Search alerts
+                const searchTerm = searchDashboard.value.toLowerCase();
+                if (searchTerm) {
+                    filteredAlerts = filteredAlerts.filter(alert => {
+                        const alertString = JSON.stringify(alert).toLowerCase();
+                        return alertString.includes(searchTerm);
+                    });
+                }
+                
+                // Sort alerts
+                const sortBy = sortAlerts.value;
+                switch (sortBy) {
+                    case 'newest':
+                        filteredAlerts.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+                        break;
+                    case 'oldest':
+                        filteredAlerts.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+                        break;
+                    case 'severity':
+                        const severityOrder = {critical: 4, high: 3, medium: 2, low: 1};
+                        filteredAlerts.sort((a, b) => {
+                            const aSeverity = a.analysis.verdict || 'medium';
+                            const bSeverity = b.analysis.verdict || 'medium';
+                            return severityOrder[bSeverity] - severityOrder[aSeverity];
+                        });
+                        break;
+                }
+                
+                // Update dashboard display
+                alertsDashboard.innerHTML = '';
+                
+                if (filteredAlerts.length === 0) {
+                    alertsDashboard.innerHTML = `
+                        <div class="empty-dashboard">
+                            <h3>No alerts match your filters</h3>
+                            <p>Try changing your filter or search criteria</p>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                // Create table structure
+                const table = document.createElement('table');
+                table.className = 'alerts-table';
+                
+                // Create table header
+                const thead = document.createElement('thead');
+                thead.innerHTML = `
+                    <tr>
+                        <th>Time</th>
+                        <th>Alert Type</th>
+                        <th>Source IP</th>
+                        <th>Severity</th>
+                        <th>Confidence</th>
+                        <th>Analysis & Recommendations</th>
+                        <th>Actions</th>
+                    </tr>
+                `;
+                table.appendChild(thead);
+                
+                // Create table body
+                const tbody = document.createElement('tbody');
+                
+                filteredAlerts.forEach(alert => {
+                    const severity = alert.analysis.verdict || 'medium';
+                    const severityClass = severity.toLowerCase().includes('critical') ? 'critical' : 
+                                        severity.toLowerCase().includes('high') ? 'high' :
+                                        severity.toLowerCase().includes('medium') ? 'medium' : 'low';
+                    
+                    // Extract relevant information
+                    const eventType = alert.alert.event || alert.alert['Event Type'] || 'Unknown';
+                    const sourceIp = alert.alert.srcip || alert.alert['Reporting IP'] || 'N/A';
+                    const timestamp = new Date(alert.timestamp).toLocaleString();
+                    const confidence = alert.analysis.confidence ? Math.round(alert.analysis.confidence * 100) : 'N/A';
+                    
+                    // Get analysis details
+                    const reasoning = alert.analysis.ai_analysis?.reasoning || 
+                                    alert.analysis.local_analysis?.reasoning || 
+                                    'No detailed analysis available';
+                    
+                    const recommendations = alert.analysis.ai_analysis?.recommendations || 
+                                          alert.analysis.local_analysis?.recommendations || 
+                                          ['No specific recommendations available'];
+                    
+                    // Get IOC matches if available
+                    const matchedIocs = alert.analysis.matched_iocs || [];
+                    
+                    // Check if this was a fallback analysis
+                    const isFallback = !alert.analysis.ai_analysis && alert.analysis.local_analysis;
+                    
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>
+                            <div class="timestamp">${timestamp}</div>
+                        </td>
+                        <td>${eventType}</td>
+                        <td>${sourceIp}</td>
+                        <td><span class="alert-severity ${severityClass}">${severity}</span></td>
+                        <td><span class="alert-confidence">${confidence}%</span></td>
+                        <td class="analysis-details">
+                            ${isFallback ? '<div class="analysis-warning">Basic Analysis (AI Service Unavailable)</div>' : ''}
+                            <div class="analysis-summary">${reasoning}</div>
+                            <div class="analysis-recommendations">
+                                <strong>Actions:</strong>
+                                <ul>
+                                    ${recommendations.map(rec => `<li>${rec}</li>`).join('')}
+                                </ul>
+                            </div>
+                            ${matchedIocs.length > 0 ? `
+                            <div class="ioc-list">
+                                <strong>IOCs:</strong>
+                                ${matchedIocs.map(ioc => `<span class="ioc-item">${ioc}</span>`).join('')}
+                            </div>
+                            ` : ''}
+                        </td>
+                        <td>
+                            <div class="alert-actions">
+                                <button class="btn-success">✓</button>
+                                <button class="btn-danger">✗</button>
+                                <button>🔍</button>
+                            </div>
+                        </td>
+                    `;
+                    tbody.appendChild(row);
+                });
+                
+                table.appendChild(tbody);
+                alertsDashboard.appendChild(table);
+            }
+            
+            // Update dashboard statistics
+            function updateDashboardStats() {
+                totalAlertsDash.textContent = dashboardAlerts.length;
+                
+                const criticalCount = dashboardAlerts.filter(alert => {
+                    const severity = alert.analysis.verdict || 'medium';
+                    return severity.toLowerCase().includes('critical');
+                }).length;
+                
+                const highCount = dashboardAlerts.filter(alert => {
+                    const severity = alert.analysis.verdict || 'medium';
+                    return severity.toLowerCase().includes('high') && !severity.toLowerCase().includes('critical');
+                }).length;
+                
+                criticalAlerts.textContent = criticalCount;
+                highAlerts.textContent = highCount;
+                
+                // Update analysis history tab as well
+                totalAnalyses.textContent = dashboardAlerts.length;
+                criticalThreats.textContent = criticalCount;
+                highThreats.textContent = highCount;
+            }
+            
             // Update UI with threat intelligence results
             function updateThreatIntelUI(analysisResult, alertData) {
-                // Your backend returns analysisResult with this structure:
-                // {
-                //   verdict: "suspicious_low_confidence",
-                //   confidence: 0.3,
-                //   matched_iocs: ["malicious_ip:192.168.1.100"],
-                //   local_analysis: {...},
-                //   ai_analysis: {...},
-                //   extracted_iocs: {...}
-                // }
+                // Handle cases where analysisResult might be malformed or incomplete
+                if (!analysisResult) {
+                    threatAssessment.innerHTML = 'Invalid analysis result received';
+                    severityBadges.innerHTML = '<div class="severity-badge unknown">Unknown</div>';
+                    recommendedActions.innerHTML = '<ul><li>No recommendations available</li></ul>';
+                    ollamaAnalysis.innerHTML = '<div class="log-entry">Error: Received invalid analysis data</div>';
+                    return;
+                }
+                
+                // Extract data with fallbacks for missing properties
+                // Handle both table format and structured format
+                const verdict = analysisResult.verdict || analysisResult['Alert Type'] || analysisResult['Severity'] || 'UNKNOWN';
+                const confidence = analysisResult.confidence ? Math.round(analysisResult.confidence * 100) : 
+                                 (analysisResult.Confidence ? parseInt(analysisResult.Confidence) : 'N/A');
                 
                 // Update threat assessment
-                const verdict = analysisResult.verdict?.toUpperCase() || 'UNKNOWN';
-                const confidence = analysisResult.confidence ? Math.round(analysisResult.confidence * 100) : 'N/A';
                 threatAssessment.innerHTML = `Threat Assessment: <strong>${verdict}</strong> (${confidence}% confidence)`;
                 
                 // Update severity badge
                 let severityClass = 'medium';
-                if (verdict.includes('MALICIOUS')) severityClass = 'critical';
-                else if (verdict.includes('SUSPICIOUS')) severityClass = 'high';
-                else if (verdict.includes('BENIGN')) severityClass = 'low';
+                let severityText = verdict;
                 
-                severityBadges.innerHTML = `
-                    <div class="severity-badge ${severityClass}">${verdict}</div>
-                `;
+                if (verdict.includes('MALICIOUS') || verdict.includes('CRITICAL') || verdict.toLowerCase().includes('critical')) {
+                    severityClass = 'critical';
+                } else if (verdict.includes('SUSPICIOUS') || verdict.includes('HIGH') || verdict.toLowerCase().includes('high')) {
+                    severityClass = 'high';
+                } else if (verdict.includes('BENIGN') || verdict.includes('LOW') || verdict.toLowerCase().includes('low')) {
+                    severityClass = 'low';
+                } else if (verdict.includes('MEDIUM') || verdict.toLowerCase().includes('medium')) {
+                    severityClass = 'medium';
+                }
                 
-                // Update recommended actions
+                severityBadges.innerHTML = `<div class="severity-badge ${severityClass}">${severityText}</div>`;
+                
+                // Update recommended actions - handle various response formats
                 recommendedActions.innerHTML = '';
                 const actionsList = document.createElement('ul');
                 
-                // Use AI analysis recommendations if available, otherwise fallback
-                const actions = analysisResult.ai_analysis?.recommendations || 
-                               analysisResult.local_analysis?.recommendations || [
-                    'Review alert details thoroughly',
-                    'Monitor for similar activity',
-                    'Check system logs for related events'
-                ];
+                // Extract recommendations from different possible locations in the response
+                let recommendations = [];
                 
-                actions.forEach(action => {
+                // Check various possible locations for recommendations
+                if (analysisResult.ai_analysis?.recommendations) {
+                    recommendations = analysisResult.ai_analysis.recommendations;
+                } else if (analysisResult.local_analysis?.recommendations) {
+                    recommendations = analysisResult.local_analysis.recommendations;
+                } else if (analysisResult.recommendations) {
+                    recommendations = analysisResult.recommendations;
+                } else if (analysisResult['Analysis & Recommendations'] && 
+                           analysisResult['Analysis & Recommendations'] !== 'No detailed analysis available') {
+                    // Parse from the table-like format
+                    recommendations = [analysisResult['Analysis & Recommendations']];
+                } else if (analysisResult.Actions && analysisResult.Actions !== 'No specific recommendations available') {
+                    // Parse actions from the malformed response
+                    const actionsText = analysisResult.Actions;
+                    if (actionsText) {
+                        // Try to extract meaningful actions from the text
+                        const actionItems = actionsText.split('|').map(item => item.trim()).filter(item => item);
+                        recommendations = actionItems.length > 0 ? actionItems : ['No specific recommendations available'];
+                    }
+                }
+                
+                // If no recommendations found, use fallbacks
+                if (recommendations.length === 0) {
+                    recommendations = ['Review alert details', 'Monitor for similar activity'];
+                }
+                
+                // Add recommendations to the UI
+                recommendations.forEach(action => {
                     const li = document.createElement('li');
                     li.textContent = action;
                     actionsList.appendChild(li);
@@ -1015,8 +1569,28 @@
                 // Add verdict and confidence
                 const verdictEntry = document.createElement('div');
                 verdictEntry.className = 'log-entry';
-                verdictEntry.innerHTML = `<span class="ioc-match">AI Verdict:</span> ${verdict} (<span class="confidence-high">${confidence}% confidence</span>)`;
+                verdictEntry.innerHTML = `<span class="ioc-match">Verdict:</span> ${verdict} (<span class="confidence-high">${confidence}% confidence</span>)`;
                 ollamaAnalysis.appendChild(verdictEntry);
+                
+                // Add reasoning if available from various sources
+                let reasoning = '';
+                if (analysisResult.ai_analysis?.reasoning) {
+                    reasoning = analysisResult.ai_analysis.reasoning;
+                } else if (analysisResult.local_analysis?.reasoning) {
+                    reasoning = analysisResult.local_analysis.reasoning;
+                } else if (analysisResult['Analysis & Recommendations'] && 
+                           analysisResult['Analysis & Recommendations'] !== 'No detailed analysis available') {
+                    reasoning = analysisResult['Analysis & Recommendations'];
+                } else if (analysisResult.reasoning) {
+                    reasoning = analysisResult.reasoning;
+                }
+                
+                if (reasoning) {
+                    const reasonEntry = document.createElement('div');
+                    reasonEntry.className = 'log-entry';
+                    reasonEntry.innerHTML = `<span class="ioc-match">Analysis:</span> ${reasoning}`;
+                    ollamaAnalysis.appendChild(reasonEntry);
+                }
                 
                 // Add matched IOCs if any
                 if (analysisResult.matched_iocs && analysisResult.matched_iocs.length > 0) {
@@ -1037,12 +1611,13 @@
                     }
                 }
                 
-                // Add reasoning if available from AI analysis
-                if (analysisResult.ai_analysis?.reasoning) {
-                    const reasonEntry = document.createElement('div');
-                    reasonEntry.className = 'log-entry';
-                    reasonEntry.innerHTML = `<span class="ioc-match">Reasoning:</span> ${analysisResult.ai_analysis.reasoning}`;
-                    ollamaAnalysis.appendChild(reasonEntry);
+                // Add source IP if available
+                const sourceIp = alertData.srcip || alertData['Source IP'] || alertData['Reporting IP'] || 'N/A';
+                if (sourceIp !== 'N/A') {
+                    const ipEntry = document.createElement('div');
+                    ipEntry.className = 'log-entry';
+                    ipEntry.innerHTML = `<span class="ioc-match">Source IP:</span> ${sourceIp}`;
+                    ollamaAnalysis.appendChild(ipEntry);
                 }
                 
                 // Add timestamp
@@ -1054,131 +1629,68 @@
             
             // Simulated analysis as fallback
             function simulateAnalysis(alert, parsedAlertData) {
+                // Extract event type from various possible locations
+                const eventType = alert.event || alert['Event Type'] || alert['Event Name'] || 'Unknown';
+                
                 // Determine threat type based on alert content
                 let threatType = 'Unknown Threat';
                 let severity = 'medium';
                 let actions = ['Review the alert details', 'Monitor for further activity'];
+                let reasoning = 'Insufficient data for detailed analysis';
 
-                if ((alert.event && alert.event.includes('auth-failed')) || 
-                    (alert['Event Type'] && alert['Event Type'].includes('auth'))) {
+                if (eventType.includes('auth-failed') || eventType.includes('authentication')) {
                     threatType = 'Brute Force Attack';
-                    severity = 'critical';
+                    severity = 'high';
+                    reasoning = 'Multiple failed authentication attempts detected';
                     actions = [
                         'Block source IP ' + (alert.srcip || parsedAlertData.srcip || 'unknown'),
-                        'Reset credentials for user ' + (alert.user || 'affected account'),
-                        'Check for compromised accounts',
-                        'Review authentication logs'
+                        'Reset credentials for affected accounts',
+                        'Review authentication logs for patterns',
+                        'Implement account lockout policy if not present'
                     ];
-                } else if ((alert.event && alert.event.includes('traffic')) || 
-                          (alert['Event Type'] && alert['Event Type'].includes('traffic'))) {
-                    threatType = 'Suspicious Network Traffic';
-                    severity = 'medium';
-                    actions = [
-                        'Investigate source IP: ' + (alert.srcip || parsedAlertData.srcip || 'unknown'),
-                        'Check firewall rules for port anomalies',
-                        'Review network traffic patterns',
-                        'Monitor for additional suspicious activity'
-                    ];
-                } else if ((alert.event && alert.event.includes('rogue')) || 
-                          (alert['Event Type'] && alert['Event Type'].includes('rogue'))) {
+                } else if (eventType.includes('rogue')) {
                     threatType = 'Rogue Access Point';
                     severity = 'high';
+                    reasoning = 'Unauthorized wireless access point detected';
                     actions = [
                         'Locate and disable rogue AP: ' + (parsedAlertData.ssid || 'unknown'),
                         'Scan for affected devices',
                         'Review wireless network policies',
                         'Update WIPS signatures'
                     ];
-                } else if (alert.event && alert.event.includes('malware')) {
+                } else if (eventType.includes('malware')) {
                     threatType = 'Malware Infection';
-                    severity = 'high';
+                    severity = 'critical';
+                    reasoning = 'Potential malware activity detected';
                     actions = [
-                        'Isolate affected system',
+                        'Isolate affected system immediately',
                         'Scan for additional infections',
-                        'Review execution path',
-                        'Check network connections'
+                        'Review execution path and artifacts',
+                        'Check network connections for exfiltration'
+                    ];
+                } else if (eventType.includes('traffic') || eventType.includes('network')) {
+                    threatType = 'Suspicious Network Traffic';
+                    severity = 'medium';
+                    reasoning = 'Anomalous network activity detected';
+                    actions = [
+                        'Investigate source IP: ' + (alert.srcip || parsedAlertData.srcip || 'unknown'),
+                        'Check firewall rules for anomalies',
+                        'Review network traffic patterns',
+                        'Monitor for additional suspicious activity'
                     ];
                 }
                 
-                // Update analysis results
-                threatAssessment.innerHTML = `The submitted alert appears to be a <strong>${threatType}</strong>.`;
-                
-                // Update severity badge
-                severityBadges.innerHTML = `
-                    <div class="severity-badge ${severity}">${severity.charAt(0).toUpperCase() + severity.slice(1)}</div>
-                `;
-                
-                // Update recommended actions
-                recommendedActions.innerHTML = '';
-                const actionsList = document.createElement('ul');
-                actions.forEach(action => {
-                    const li = document.createElement('li');
-                    li.textContent = action;
-                    actionsList.appendChild(li);
-                });
-                recommendedActions.appendChild(actionsList);
-                
-                // Simulate AI analysis
-                ollamaAnalysis.innerHTML = `
-                    <div class="log-entry">Backend offline - using simulated analysis</div>
-                    <div class="log-entry">Alert type: ${alert.type || alert['Event Type'] || 'unknown'}</div>
-                    <div class="log-entry">Event: ${alert.event || alert['Event Name'] || 'unknown'}</div>
-                    <div class="log-entry">Source IP: ${alert.srcip || parsedAlertData.srcip || 'unknown'}</div>
-                    <div class="log-entry">Confidence: 85%</div>
-                `;
-            }
-            
-            // Process the data for Log Parser
-            function processData(data) {
-                parsedData = [];
-                allKeys = new Set();
-                
-                // Check if data is an array or single object
-                const alerts = Array.isArray(data) ? data : [data];
-                totalAlerts.textContent = alerts.length;
-                
-                // Show progress bar
-                progressBar.style.width = '0%';
-                progressBar.textContent = '0%';
-                
-                // Process each alert
-                for (let i = 0; i < alerts.length; i++) {
-                    const alert = alerts[i];
-                    const parsedAlert = parseAlert(alert);
-                    
-                    if (parsedAlert) {
-                        parsedData.push(parsedAlert);
-                        
-                        // Collect all unique keys
-                        Object.keys(parsedAlert).forEach(key => allKeys.add(key));
-                    }
-                    
-                    // Update progress
-                    const progress = Math.round((i + 1) / alerts.length * 100);
-                    progressBar.style.width = `${progress}%`;
-                    progressBar.textContent = `${progress}%`;
-                    
-                    // Update counters
-                    parsedAlerts.textContent = parsedData.length;
-                    uniqueKeys.textContent = allKeys.size;
-                }
-                
-                // Display results
-                if (parsedData.length > 0) {
-                    parserResultsPlaceholder.style.display = 'none';
-                    parsedResults.style.display = 'block';
-                    parsedResults.innerHTML = `Successfully parsed ${parsedData.length} alerts with ${allKeys.size} unique fields.`;
-                    
-                    // Show sample alert
-                    sampleAlert.innerHTML = syntaxHighlight(JSON.stringify(parsedData[0], null, 2));
-                    
-                    // Enable download button
-                    downloadBtn.disabled = false;
-                    
-                    addLogEntry(`Parsed ${parsedData.length} alerts with ${allKeys.size} unique fields`);
-                } else {
-                    addLogEntry('No alerts were parsed successfully');
-                }
+                // Return analysis result
+                return {
+                    verdict: severity,
+                    confidence: 0.75,
+                    matched_iocs: [],
+                    local_analysis: {
+                        reasoning: reasoning,
+                        recommendations: actions
+                    },
+                    ai_analysis: null // Indicate this is a fallback analysis
+                };
             }
             
             // Parse a single alert
@@ -1222,51 +1734,6 @@
                 }
             }
             
-            // Add to analysis history
-            function addToAnalysisHistory(analysis) {
-                analysisHistoryData.unshift(analysis);
-                
-                // Update history display
-                analysisHistory.innerHTML = '';
-                analysisHistoryData.forEach((item, index) => {
-                    const entry = document.createElement('div');
-                    entry.className = 'log-entry';
-                    entry.innerHTML = `
-                        <strong>${new Date(item.timestamp).toLocaleString()}</strong> - 
-                        ${item.threatType} (${item.severity})
-                    `;
-                    entry.addEventListener('click', () => {
-                        // Show this analysis in the SOC Tester tab
-                        document.getElementById('alert-data').value = JSON.stringify(item.alert, null, 2);
-                        tabs[0].click(); // Switch to SOC Tester tab
-                        analyzeAlert(item.alert);
-                    });
-                    analysisHistory.appendChild(entry);
-                });
-                
-                // Update statistics
-                totalAnalyses.textContent = analysisHistoryData.length;
-                criticalThreats.textContent = analysisHistoryData.filter(a => a.severity === 'critical').length;
-                highThreats.textContent = analysisHistoryData.filter(a => a.severity === 'high').length;
-            }
-            
-            // Download JSON data
-            function downloadJSON(data, filename) {
-                const jsonString = JSON.stringify(data, null, 2);
-                const blob = new Blob([jsonString], { type: 'application/json' });
-                const url = URL.createObjectURL(blob);
-                
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = filename;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                URL.revokeObjectURL(url);
-                
-                addLogEntry(`Downloaded ${data.length} parsed alerts as ${filename}`);
-            }
-            
             // Add entry to log
             function addLogEntry(message) {
                 const now = new Date();
@@ -1299,51 +1766,6 @@
                     return '<span class="' + cls + '">' + match + '</span>';
                 });
             }
-            
-            // Initialize with sample data and check backend status
-            sampleAlert.innerHTML = syntaxHighlight(JSON.stringify({
-                "Event Receive Time": "2025-06-19 17:34:21",
-                "Reporting IP": "172.20.0.1",
-                "Event Type": "FortiGate-event-wireless-rogue-detect-chg",
-                "Event Name": "Rogue AP change detected",
-                "date": "2025-06-19",
-                "time": "17:34:21",
-                "devname": "EvvoTevvo",
-                "devid": "FG101FTK20008934",
-                "eventtime": 1750325660662446600,
-                "tz": "+0800",
-                "logid": "0104043571",
-                "type": "event",
-                "subtype": "wireless",
-                "level": "notice",
-                "vd": "root",
-                "logdesc": "Rogue AP change detected",
-                "ssid": "Evvo-Staff",
-                "bssid": "78:45:58:83:21:3a",
-                "aptype": 0,
-                "rate": 288,
-                "radioband": "11NGHT20",
-                "channel": 6,
-                "action": "rogue-ap-changed",
-                "manuf": "Ubiquiti",
-                "security": "WPA2 Personal",
-                "encryption": "AES",
-                "signal": -53,
-                "noise": -95,
-                "live": 8144911,
-                "age": 0,
-                "onwire": "no",
-                "detectionmethod": "N/A",
-                "stamac": "78:45:58:83:21:39",
-                "apscan": "N/A",
-                "sndetected": "FP231FTF20009114",
-                "radioiddetected": 2,
-                "stacount": 0,
-                "snclosest": "FP231FTF20009114",
-                "radioidclosest": 2,
-                "apstatus": 0,
-                "msg": "AP Evvo-Staff 78:45:58:83:21:3a chan 6 live 8144911"
-            }, null, 2));
             
             // Check backend status on load
             checkBackendStatus();

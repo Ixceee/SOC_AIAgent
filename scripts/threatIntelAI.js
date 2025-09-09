@@ -309,7 +309,7 @@ class ThreatIntelAI {
 
   // Convert IP to long integer
   ipToLong(ip) {
-    return ip.split('.').reduce((acc, octet) => (acc << 8) + parseInt(octet), 0) >>> 0;
+    return ip.split('.').reduce((acc, octet) => (acc << 8) + parseInt(octet, 10), 0) >>> 0;
   }
 
   analyzeC2Patterns(iocs, alertData) {
@@ -344,7 +344,7 @@ class ThreatIntelAI {
 
       // 2. Check for suspicious ports (defensive check) - skip if VPN port
       if (alertData.dst_port || alertData.port) {
-        const port = parseInt(alertData.dst_port || alertData.port);
+        const port = parseInt(alertData.dst_port || alertData.port, 10);
         if (!isNaN(port) && 
             this.c2Patterns.suspicious_ports.includes(port) &&
             !BENIGN_ENTITIES.vpn_ports.includes(port)) {
@@ -754,11 +754,12 @@ class ThreatIntelAI {
         }
       }
 
-      if (confidence > 0.7) {
-        verdict = 'malicious';
+      // FIXED: Use results.confidence instead of undefined confidence variable
+      if (results.confidence > 0.7) {
+        results.verdict = 'malicious';
         // DON'T overwrite severity if it's already set to critical
-        if (severity !== 'critical') {
-          severity = 'high';
+        if (results.severity !== 'critical') {
+          results.severity = 'high';
         }
       } else if (results.confidence > 0.3) {
         results.verdict = 'suspicious';
@@ -778,7 +779,7 @@ class ThreatIntelAI {
     return results;
   }
 
-  async checkOTX(ioc) {
+  async checkOTX(ioc, retries = 2) {
     if (!process.env.OTX_API_KEY) {
       return { pulse_count: 0, pulses: [], reputation: 0 };
     }
@@ -810,7 +811,15 @@ class ThreatIntelAI {
       return result;
 
     } catch (error) {
+      if (error.response?.status >= 500 && retries > 0) {
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        return this.checkOTX(ioc, retries - 1);
+      }
       if (error.response?.status === 404) {
+        return { pulse_count: 0, pulses: [], reputation: 0 };
+      }
+      if (error.response?.status === 400) {
+        console.warn(`OTX bad request for ${ioc}:`, error.message);
         return { pulse_count: 0, pulses: [], reputation: 0 };
       }
       console.error(`OTX check failed for ${ioc}:`, error.message);
@@ -857,23 +866,157 @@ class ThreatIntelAI {
   }
 
   determineFinalVerdict(localAnalysis, externalAnalysis, aiAnalysis, c2Analysis, iocs, alertData) {
-  console.log('Final verdict analysis:');
-  console.log('Local analysis verdict:', localAnalysis.verdict);
-  console.log('Local analysis confidence:', localAnalysis.confidence);
-  console.log('Malicious domains found:', iocs.domains.filter(d => this.knownThreats.malicious_domains.includes(d)));
-  console.log('Malicious IPs found:', iocs.ips.filter(ip => this.knownThreats.malicious_ips.includes(ip)));
-  const internalIPs = iocs.ips.filter(ip => this.isInternalIP(ip));
-  const externalIPs = iocs.ips.filter(ip => !this.isInternalIP(ip));
-  const whitelistedIPs = iocs.ips.filter(ip => this.isWhitelistedIP(ip));
+    console.log('Final verdict analysis:');
+    console.log('Local analysis verdict:', localAnalysis.verdict);
+    console.log('Local analysis confidence:', localAnalysis.confidence);
+    console.log('Malicious domains found:', iocs.domains.filter(d => this.knownThreats.malicious_domains.includes(d)));
+    console.log('Malicious IPs found:', iocs.ips.filter(ip => this.knownThreats.malicious_ips.includes(ip)));
+    const internalIPs = iocs.ips.filter(ip => this.isInternalIP(ip));
+    const externalIPs = iocs.ips.filter(ip => !this.isInternalIP(ip));
+    const whitelistedIPs = iocs.ips.filter(ip => this.isWhitelistedIP(ip));
 
-  // Extract event type for context-aware analysis
-  const eventType = alertData['Event Type'] || alertData['Event type'] || '';
-  const eventName = alertData['Event Name'] || '';
-  
-  console.log('Event context:', { eventType, eventName });
+    // Extract event type for context-aware analysis
+    const eventType = alertData['Event Type'] || alertData['Event type'] || '';
+    const eventName = alertData['Event Name'] || '';
+    
+    console.log('Event context:', { eventType, eventName });
 
-  // **NEW: Handle DNS events specifically**
-  if (eventType.includes('dns') || eventType.includes('DNS')) {
+    // Initialize variables for the final verdict
+    let verdict = 'unknown';
+    let confidence = 0;
+    let severity = 'low';
+    let reason = '';
+    let recommended_actions = [];
+
+    // **NEW: Handle DNS events specifically**
+    if (eventType.includes('dns') || eventType.includes('DNS')) {
+      const maliciousDomains = iocs.domains.filter(domain => 
+        this.knownThreats.malicious_domains.includes(domain)
+      );
+      
+      if (maliciousDomains.length > 0) {
+        return {
+          verdict: 'malicious',
+          confidence: 0.95, // Higher confidence for DNS events
+          severity: 'high',
+          reason: `DNS query to known malicious domain: ${maliciousDomains.join(', ')}`,
+          recommended_actions: [
+            'Immediately block DNS queries to this domain',
+            'Investigate source device for compromise',
+            'Check DNS logs for other queries to suspicious domains',
+            'Update DNS blacklist and firewall rules'
+          ]
+        };
+      }
+      
+      // For benign DNS queries, provide specific guidance
+      if (iocs.domains.length > 0 && maliciousDomains.length === 0) {
+        return {
+          verdict: 'benign',
+          confidence: 0.8,
+          severity: 'info',
+          reason: 'DNS query to non-malicious domain',
+          recommended_actions: [
+            'Monitor DNS patterns for anomalies',
+            'Verify domain reputation periodically',
+            'Review DNS filtering policies'
+          ]
+        };
+      }
+    }
+
+    // **NEW: Handle traffic events specifically**
+    if (eventType.includes('traffic')) {
+      const maliciousIPs = iocs.ips.filter(ip => 
+        this.knownThreats.malicious_ips.includes(ip)
+      );
+      
+      if (maliciousIPs.length > 0) {
+        const action = alertData.action || 'unknown';
+        return {
+          verdict: 'malicious',
+          confidence: action === 'deny' ? 0.9 : 0.8,
+          severity: 'high',
+          reason: `Traffic involving known malicious IP: ${maliciousIPs.join(', ')} (action: ${action})`,
+          recommended_actions: [
+            'Block malicious IP at firewall level',
+            'Investigate communication patterns',
+            'Check for data exfiltration',
+            'Review all systems that communicated with this IP'
+          ]
+        };
+      }
+    }
+
+    // **NEW: Handle security events (virus, attack, etc.)**
+    if (eventType.includes('virus') || eventType.includes('attack') || eventType.includes('anomaly')) {
+      const maliciousHashes = iocs.hashes.filter(hash => 
+        this.knownThreats.malicious_hashes.includes(hash)
+      );
+      
+      if (maliciousHashes.length > 0) {
+        return {
+          verdict: 'malicious',
+          confidence: 0.99, // Very high confidence for hash matches
+          severity: 'critical',
+          reason: `Known malware hash detected: ${maliciousHashes.join(', ')}`,
+          recommended_actions: [
+            'Immediately quarantine infected files',
+            'Scan all systems for this hash',
+            'Investigate infection vector',
+            'Update antivirus signatures'
+          ]
+        };
+      }
+    }
+
+    // **NEW: Handle VPN/IPSec events specifically**
+    if (eventType.includes('ipsec') || eventType.includes('vpn')) {
+      return {
+        verdict: 'benign',
+        confidence: 0.9,
+        severity: 'info',
+        reason: 'VPN/IPSec traffic detected - legitimate business communication',
+        recommended_actions: [
+          'Verify VPN tunnel authorization',
+          'Monitor VPN performance metrics',
+          'Review VPN access logs for anomalies'
+        ]
+      };
+    }
+
+    // **NEW: Handle wireless/rogue AP events**
+    if (eventType.includes('wireless') || eventType.includes('rogue')) {
+      return {
+        verdict: 'suspicious',
+        confidence: 0.7,
+        severity: 'medium',
+        reason: 'Wireless security event detected',
+        recommended_actions: [
+          'Investigate rogue access point',
+          'Check wireless network configuration',
+          'Review connected devices',
+          'Monitor for unauthorized access'
+        ]
+      };
+    }
+
+    // **NEW: Handle denied traffic specifically**
+    if (alertData.action === 'deny') {
+      return {
+        verdict: 'benign',
+        confidence: 0.7,
+        severity: 'low',
+        reason: 'Firewall correctly blocked suspicious traffic',
+        recommended_actions: [
+          'Review firewall rule that triggered the block',
+          'Verify if this is expected behavior',
+          'Monitor for repeated block attempts'
+        ]
+      };
+    }
+
+    // Rest of the existing logic for non-specific events
     const maliciousDomains = iocs.domains.filter(domain => 
       this.knownThreats.malicious_domains.includes(domain)
     );
@@ -881,157 +1024,30 @@ class ThreatIntelAI {
     if (maliciousDomains.length > 0) {
       return {
         verdict: 'malicious',
-        confidence: 0.95, // Higher confidence for DNS events
+        confidence: 0.9,
         severity: 'high',
-        reason: `DNS query to known malicious domain: ${maliciousDomains.join(', ')}`,
+        reason: `Known malicious domain detected: ${maliciousDomains.join(', ')}`,
         recommended_actions: [
-          'Immediately block DNS queries to this domain',
-          'Investigate source device for compromise',
-          'Check DNS logs for other queries to suspicious domains',
-          'Update DNS blacklist and firewall rules'
+          'Block malicious domain immediately',
+          'Investigate DNS queries for this domain',
+          'Check all systems for infections'
         ]
       };
     }
     
-    // For benign DNS queries, provide specific guidance
-    if (iocs.domains.length > 0 && maliciousDomains.length === 0) {
+    // If whitelisted IPs are present, treat as benign
+    if (whitelistedIPs.length > 0) {
       return {
         verdict: 'benign',
-        confidence: 0.8,
+        confidence: 0.9,
         severity: 'info',
-        reason: 'DNS query to non-malicious domain',
+        reason: 'Whitelisted business infrastructure IP addresses detected',
         recommended_actions: [
-          'Monitor DNS patterns for anomalies',
-          'Verify domain reputation periodically',
-          'Review DNS filtering policies'
+          'Verify whitelisted IP communication is expected',
+          'Monitor for any unusual patterns in business traffic'
         ]
       };
     }
-  }
-
-  // **NEW: Handle traffic events specifically**
-  if (eventType.includes('traffic')) {
-    const maliciousIPs = iocs.ips.filter(ip => 
-      this.knownThreats.malicious_ips.includes(ip)
-    );
-    
-    if (maliciousIPs.length > 0) {
-      const action = alertData.action || 'unknown';
-      return {
-        verdict: 'malicious',
-        confidence: action === 'deny' ? 0.9 : 0.8,
-        severity: 'high',
-        reason: `Traffic involving known malicious IP: ${maliciousIPs.join(', ')} (action: ${action})`,
-        recommended_actions: [
-          'Block malicious IP at firewall level',
-          'Investigate communication patterns',
-          'Check for data exfiltration',
-          'Review all systems that communicated with this IP'
-        ]
-      };
-    }
-  }
-
-  // **NEW: Handle security events (virus, attack, etc.)**
-  if (eventType.includes('virus') || eventType.includes('attack') || eventType.includes('anomaly')) {
-    const maliciousHashes = iocs.hashes.filter(hash => 
-      this.knownThreats.malicious_hashes.includes(hash)
-    );
-    
-    if (maliciousHashes.length > 0) {
-      return {
-        verdict: 'malicious',
-        confidence: 0.99, // Very high confidence for hash matches
-        severity: 'critical',
-        reason: `Known malware hash detected: ${maliciousHashes.join(', ')}`,
-        recommended_actions: [
-          'Immediately quarantine infected files',
-          'Scan all systems for this hash',
-          'Investigate infection vector',
-          'Update antivirus signatures'
-        ]
-      };
-    }
-  }
-
-  // **NEW: Handle VPN/IPSec events specifically**
-  if (eventType.includes('ipsec') || eventType.includes('vpn')) {
-    return {
-      verdict: 'benign',
-      confidence: 0.9,
-      severity: 'info',
-      reason: 'VPN/IPSec traffic detected - legitimate business communication',
-      recommended_actions: [
-        'Verify VPN tunnel authorization',
-        'Monitor VPN performance metrics',
-        'Review VPN access logs for anomalies'
-      ]
-    };
-  }
-
-  // **NEW: Handle wireless/rogue AP events**
-  if (eventType.includes('wireless') || eventType.includes('rogue')) {
-    return {
-      verdict: 'suspicious',
-      confidence: 0.7,
-      severity: 'medium',
-      reason: 'Wireless security event detected',
-      recommended_actions: [
-        'Investigate rogue access point',
-        'Check wireless network configuration',
-        'Review connected devices',
-        'Monitor for unauthorized access'
-      ]
-    };
-  }
-
-  // **NEW: Handle denied traffic specifically**
-  if (alertData.action === 'deny') {
-    return {
-      verdict: 'benign',
-      confidence: 0.7,
-      severity: 'low',
-      reason: 'Firewall correctly blocked suspicious traffic',
-      recommended_actions: [
-        'Review firewall rule that triggered the block',
-        'Verify if this is expected behavior',
-        'Monitor for repeated block attempts'
-      ]
-    };
-  }
-
-  // Rest of the existing logic for non-specific events
-  const maliciousDomains = iocs.domains.filter(domain => 
-    this.knownThreats.malicious_domains.includes(domain)
-  );
-  
-  if (maliciousDomains.length > 0) {
-    return {
-      verdict: 'malicious',
-      confidence: 0.9,
-      severity: 'high',
-      reason: `Known malicious domain detected: ${maliciousDomains.join(', ')}`,
-      recommended_actions: [
-        'Block malicious domain immediately',
-        'Investigate DNS queries for this domain',
-        'Check all systems for infections'
-      ]
-    };
-  }
-  // If whitelisted IPs are present, treat as benign
-  if (whitelistedIPs.length > 0) {
-    return {
-      verdict: 'benign',
-      confidence: 0.9,
-      severity: 'info',
-      reason: 'Whitelisted business infrastructure IP addresses detected',
-      recommended_actions: [
-        'Verify whitelisted IP communication is expected',
-        'Monitor for any unusual patterns in business traffic'
-      ]
-    };
-  }
-
 
     // High confidence C2 detection overrides internal IP benign status
     if (c2Analysis.detected && c2Analysis.confidence > 0.6) {
@@ -1053,12 +1069,19 @@ class ThreatIntelAI {
         verdict: externalAnalysis.verdict,
         confidence: externalAnalysis.confidence,
         severity: externalAnalysis.severity || 'medium',
-        reason: 'External threat intelligence match'
+        reason: 'External threat intelligence match',
+        recommended_actions: externalAnalysis.recommended_actions || []
       };
     }
 
     if (aiAnalysis && aiAnalysis.verdict !== 'unknown' && aiAnalysis.verdict !== 'openai_not_configured') {
-      return aiAnalysis;
+      return {
+        verdict: aiAnalysis.verdict,
+        confidence: aiAnalysis.confidence,
+        severity: aiAnalysis.severity || 'medium',
+        reason: aiAnalysis.reasoning || 'AI analysis result',
+        recommended_actions: aiAnalysis.recommended_actions || []
+      };
     }
 
     if (internalIPs.length > 0 && externalIPs.length > 0) {
@@ -1076,13 +1099,20 @@ class ThreatIntelAI {
     }
 
     if (localAnalysis.verdict !== 'unknown') {
-      return localAnalysis;
+      return {
+        verdict: localAnalysis.verdict,
+        confidence: localAnalysis.confidence,
+        severity: localAnalysis.severity,
+        reason: 'Local analysis result',
+        recommended_actions: localAnalysis.recommended_actions
+      };
     }
 
     return { 
       verdict: 'unknown', 
       confidence: 0,
       severity: 'low',
+      reason: 'Insufficient information for determination',
       recommended_actions: ['Review alert details thoroughly']
     };
   }
@@ -1149,7 +1179,8 @@ class ThreatIntelAI {
 
     } catch (error) {
       if (error.response?.status === 429 && retries > 0) {
-        await new Promise(resolve => setTimeout(resolve, 2000));
+        const delay = Math.pow(2, 4 - retries) * 1000; // Exponential backoff
+        await new Promise(resolve => setTimeout(resolve, delay));
         return this.analyzeWithAI(iocs, externalAnalysis, c2Analysis, retries - 1);
       }
       
