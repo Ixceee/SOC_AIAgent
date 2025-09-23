@@ -5,16 +5,16 @@ const http = require('http');
 const fs = require('fs');
 const path = require('path');
 const morgan = require('morgan');
+const axios = require('axios'); // Added axios import
 const app = express();
 
 // Middleware
-app.use(cors()); // ✅ CORS enabled
+app.use(cors());
 app.options('*', cors());
 app.use(morgan('combined'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
-
 
 app.options('*', (req, res) => {
   console.log('✅ Preflight OPTIONS request received');
@@ -57,7 +57,7 @@ app.get('/api/health-simple', (req, res) => {
 });
 // ================= END DEBUG ROUTES =================
 
-// Import and mount routers - CORRECTED: No duplicate imports
+// Import and mount routers - CORRECTED PATH
 console.log('Loading routers...');
 
 // Helper function to create fallback router
@@ -72,9 +72,9 @@ const createFallbackRouter = (routerName) => {
   return router;
 };
 
-// Load each router with error handling
+// Load each router with error handling - CORRECTED PATHS
 try {
-  const networkRouter = require('./scripts/networkAI');
+  const networkRouter = require('./scripts/networkAI.js'); // Changed from ./scripts/networkAI
   app.use('/api/network', networkRouter);
   console.log('✓ Network router loaded and mounted');
 } catch (error) {
@@ -83,7 +83,7 @@ try {
 }
 
 try {
-  const endpointRouter = require('./scripts/endpointAI');
+  const endpointRouter = require('./scripts/endpointAI.js'); // Changed from ./scripts/endpointAI
   app.use('/api/endpoint', endpointRouter);
   console.log('✓ Endpoint router loaded and mounted');
 } catch (error) {
@@ -92,7 +92,7 @@ try {
 }
 
 try {
-  const appRouter = require('./scripts/appAI');
+  const appRouter = require('./scripts/appAI.js'); // Changed from ./scripts/appAI
   app.use('/api/app', appRouter);
   console.log('✓ App router loaded and mounted');
 } catch (error) {
@@ -101,7 +101,7 @@ try {
 }
 
 try {
-  const threatIntelRouter = require('./scripts/threatIntelAI');
+  const threatIntelRouter = require('./scripts/threatIntelAI.js'); // Changed from ./scripts/threatIntelAI
   app.use('/api/threat-intel', threatIntelRouter);
   console.log('✓ Threat Intel router loaded and mounted');
 } catch (error) {
@@ -114,13 +114,17 @@ app.get('/', (req, res) => {
   res.send('SOC AI Agent is running');
 });
 
-// Health check endpoint - FIXED: Handle Redis errors
+// Health check endpoint - FIXED: Removed Redis reference
 app.get('/api/health', async (req, res) => {
   try {
-    const redisStatus = await require('./scripts/unknownAI').ping();
+    // Check if Ollama is available
+    const ollamaResponse = await axios.get(`${process.env.OLLAMA_HOST || 'http://localhost:11434'}/api/tags`, {
+      timeout: 5000
+    });
+    
     res.json({ 
       status: 'healthy',
-      redis: redisStatus,
+      ollama: ollamaResponse.status === 200 ? 'connected' : 'error',
       uptime: process.uptime(),
       services: ['network', 'endpoint', 'app', 'threat-intel'],
       timestamp: new Date().toISOString()
@@ -128,7 +132,7 @@ app.get('/api/health', async (req, res) => {
   } catch (error) {
     res.json({ 
       status: 'degraded',
-      redis: 'unavailable',
+      ollama: 'unavailable',
       error: error.message,
       uptime: process.uptime(),
       services: ['network', 'endpoint', 'app', 'threat-intel'],
@@ -176,13 +180,13 @@ app.use('*', (req, res) => {
       '/api/network/analyze',
       '/api/endpoint/analyze',
       '/api/app/analyze',
-      '/api/threat-intel'
+      '/api/threat-intel/analyze' // Fixed endpoint
     ]
   });
 });
 
 // Create HTTP server
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 11435;
 const server = http.createServer(app);
 
 // Start server
@@ -196,7 +200,7 @@ server.listen(PORT, '0.0.0.0', () => {
   console.log('- POST /api/network/analyze   - Network traffic analysis');
   console.log('- POST /api/endpoint/analyze  - Endpoint event analysis');
   console.log('- POST /api/app/analyze       - Rogue AP analysis');
-  console.log('- POST /api/threat-intel      - Threat intelligence correlation');
+  console.log('- POST /api/threat-intel/analyze - Threat intelligence correlation'); // Fixed endpoint
   console.log('\nTest URLs:');
   console.log(`http://localhost:${PORT}/debug`);
   console.log(`http://localhost:${PORT}/api/debug`);
@@ -214,11 +218,10 @@ server.on('error', (error) => {
   process.exit(1);
 });
 
-// Graceful shutdown
+// Graceful shutdown - REMOVED Redis reference
 process.on('SIGTERM', () => {
   console.log('SIGTERM received. Shutting down gracefully...');
   server.close(() => {
-    require('./scripts/unknownAI').disconnect();
     process.exit(0);
   });
 });
