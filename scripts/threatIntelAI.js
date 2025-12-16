@@ -1,1296 +1,868 @@
-const axios = require('axios');
-const express = require('express');
-const { isIP } = require('net');
+﻿const express = require('express');
+const fs = require('fs');
+const path = require('path');
+const csv = require('csv-parser');
+const { Reader } = require('@maxmind/geoip2-node');
 const router = express.Router();
-
-// Default threat intelligence data (can be expanded)
-const DEFAULT_THREAT_INTEL = {
-  malicious_ips: [
-    '192.168.1.100',
-    '10.0.0.666',
-    '172.16.0.13',
-    '185.243.115.84', // Known C2 IP
-    '45.77.80.133',    // Known C2 IP
-    '95.179.130.130',  // Added from test case
-    '198.51.100.75'    // Added from test case
-  ],
-  malicious_domains: [
-    'evil-domain.com',
-    'malware-distribution.net',
-    'phishing-site.org',
-    'c2-malicious-domain.com', // C2 domain
-    'exfil-server.com'         // Data exfiltration
-  ],
-  malicious_hashes: [
-    'abc123def456',
-    'deadbeefcafe',
-    'malwarehash123'
-  ]
-};
-
-// Known benign entities
-const BENIGN_ENTITIES = {
-  domains: [
-    'microsoft.com', 'google.com', 'apple.com', 'amazonaws.com', 
-    'azure.com', 'cloudfront.net', 'googleapis.com', 'windowsupdate.com',
-    'ubuntu.com', 'docker.com', 'github.com', 'gitlab.com'
-  ],
-  ips: [
-    '8.8.8.8', '8.8.4.4', '1.1.1.1', '1.0.0.1' // Public DNS servers
-  ],
-  // Whitelisted IP ranges for business infrastructure
-  whitelisted_ranges: [
-    '109.245.0.0/16', // VPN infrastructure
-    '10.0.0.0/8',
-    '192.168.0.0/16',
-    '172.16.0.0/12'
-  ],
-  vpn_ports: [500, 4500], // IPSec ports
-  vpn_protocols: ['IPSec', 'VPN']
-};
 
 class ThreatIntelAI {
   constructor() {
-    this.knownThreats = DEFAULT_THREAT_INTEL;
-    this.otxCache = new Map();
-    this.geoipCache = new Map();
-    this.cacheTTL = 3600000; // 1 hour cache
-    this.c2Patterns = this.initializeC2Patterns();
+    this.knownThreats = {
+      malicious_ips: [],
+      malicious_domains: ['evil-domain.com', 'malware-distribution.net'],
+      // Internal threat indicators
+      suspicious_internal_patterns: [],
+      critical_internal_systems: []
+    };
+    this.asnDatabaseV4 = new Map();
+    this.asnDatabaseV6 = new Map();
+    this.countryReader = null;
+    
+    this.loadBlacklist();
+    this.loadASNDatabases();
+    this.loadCountryDatabase();
+    this.loadInternalThreatPatterns();
   }
 
-  // Initialize C2 detection patterns
-  initializeC2Patterns() {
-    return {
-      suspicious_domains: [
-        /([a-z]{12,}\.(com|net|org|info))$/,
-        /([0-9a-f]{16,}\.(tk|ml|ga|cf|gq))$/,
-        /(xn--[a-z0-9]+\.(com|net))$/,
-        /(c2|command|control|beacon|panel)\./,
-        /(api|update|stats|report|data)\.(xyz|top|club)/,
-        /(mail|smtp|ftp|ssh)\.(duckdns|no-ip|dyn|ddns)\./
-      ],
-      suspicious_ports: [
-        4444, 8080, 9001, 1337, 31337, 65432, 54321, 12345
-      ],
-      high_risk_tlds: [
-        'tk', 'ml', 'ga', 'cf', 'gq', 'xyz', 'top', 'club', 'bid'
-      ]
-    };
+  async loadCountryDatabase() {
+    try {
+      const countryDbPath = path.join(__dirname, '..', 'GeoLite2-Country.mmdb');
+      console.log('🌍 Loading Country MMDB database from:', countryDbPath);
+      
+      if (fs.existsSync(countryDbPath)) {
+        this.countryReader = await Reader.open(countryDbPath);
+        console.log('✅ Country MMDB database loaded successfully');
+        
+        // Test the database
+        try {
+          const testResponse = this.countryReader.country('1.1.1.1');
+          console.log('🧪 Country DB test - 1.1.1.1 →', testResponse.country?.isoCode || 'Unknown');
+        } catch (testError) {
+          console.log('⚠️ Country DB test failed (may be expected):', testError.message);
+        }
+      } else {
+        console.warn('⚠️ GeoLite2-Country.mmdb not found at:', countryDbPath);
+      }
+    } catch (error) {
+      console.error('❌ Error loading country database:', error);
+    }
+  }
+
+  // Load internal threat patterns from file
+  loadInternalThreatPatterns() {
+    try {
+      const patternsPath = path.join(__dirname, '..', 'internal-threat-patterns.json');
+      console.log('🔍 Looking for internal threat patterns at:', patternsPath);
+      
+      if (fs.existsSync(patternsPath)) {
+        const data = JSON.parse(fs.readFileSync(patternsPath, 'utf8'));
+        this.knownThreats.suspicious_internal_patterns = data.suspicious_patterns || [];
+        this.knownThreats.critical_internal_systems = data.critical_systems || [];
+        console.log(`✅ Loaded ${this.knownThreats.suspicious_internal_patterns.length} internal threat patterns`);
+        console.log(`✅ Loaded ${this.knownThreats.critical_internal_systems.length} critical systems`);
+      } else {
+        console.log('⚠️ No internal threat patterns file found, using defaults');
+        // Default patterns
+        this.knownThreats.suspicious_internal_patterns = [
+          { type: 'internal_scan', pattern: 'src_internal:true AND dst_internal:true AND port_count:>10', severity: 'high' },
+          { type: 'critical_system_access', pattern: 'dst_hostname:contains("dc") OR dst_hostname:contains("sql")', severity: 'high' },
+          { type: 'data_exfiltration', pattern: 'src_internal:true AND bytes_sent:>10000000', severity: 'critical' }
+        ];
+        this.knownThreats.critical_internal_systems = [
+          { ip: '192.168.1.1', hostname: 'gateway', type: 'network', criticality: 'high' },
+          { ip: '192.168.1.100', hostname: 'dc01', type: 'domain_controller', criticality: 'critical' },
+          { ip: '192.168.1.150', hostname: 'sql01', type: 'database', criticality: 'critical' }
+        ];
+      }
+    } catch (error) {
+      console.error('❌ Error loading internal threat patterns:', error);
+    }
+  }
+
+  getCountryForIP(ip) {
+    if (!this.countryReader) {
+      return { 
+        country: 'Unknown', 
+        country_code: 'XX',
+        continent: 'Unknown',
+        error: 'Country database not loaded'
+      };
+    }
+
+    // Check if IP is internal first
+    if (this.isInternalIP(ip)) {
+      return {
+        country: 'Internal Network',
+        country_code: 'INT',
+        continent: 'Private',
+        is_internal: true,
+        network_type: 'private'
+      };
+    }
+
+    try {
+      const response = this.countryReader.country(ip);
+      
+      return {
+        country: response.country?.names?.en || 'Unknown',
+        country_code: response.country?.isoCode || 'XX',
+        continent: response.continent?.names?.en || 'Unknown',
+        continent_code: response.continent?.code || 'XX',
+        is_in_european_union: response.country?.isInEuropeanUnion || false,
+        accuracy_radius: response.country?.confidence || 0,
+        is_internal: false,
+        network_type: 'public'
+      };
+    } catch (error) {
+      console.log(`❌ Country lookup failed for ${ip}:`, error.message);
+      return {
+        country: 'Unknown',
+        country_code: 'XX',
+        continent: 'Unknown',
+        error: error.message
+      };
+    }
+  }
+
+  async loadASNDatabases() {
+    try {
+      console.log('🌍 Loading ASN databases...');
+      
+      const asnV4Path = path.join(__dirname, '..', 'GeoLite2-ASN-Blocks-IPv4.csv');
+      if (fs.existsSync(asnV4Path)) {
+        await this.loadASNFromCSV(asnV4Path, this.asnDatabaseV4);
+        console.log(`✅ Loaded ${this.asnDatabaseV4.size} IPv4 ASN records`);
+      } else {
+        console.warn('⚠️ GeoLite2-ASN-Blocks-IPv4.csv not found');
+      }
+
+      const asnV6Path = path.join(__dirname, '..', 'GeoLite2-ASN-Blocks-IPv6.csv');
+      if (fs.existsSync(asnV6Path)) {
+        await this.loadASNFromCSV(asnV6Path, this.asnDatabaseV6);
+        console.log(`✅ Loaded ${this.asnDatabaseV6.size} IPv6 ASN records`);
+      } else {
+        console.warn('⚠️ GeoLite2-ASN-Blocks-IPv6.csv not found');
+      }
+
+    } catch (error) {
+      console.error('❌ Error loading ASN databases:', error);
+    }
+  }
+
+  loadASNFromCSV(filePath, database) {
+    return new Promise((resolve, reject) => {
+      fs.createReadStream(filePath)
+        .pipe(csv({ 
+          headers: ['network', 'autonomous_system_number', 'autonomous_system_organization'],
+          skipEmptyLines: true 
+        }))
+        .on('data', (row) => {
+          if (row.network && row.autonomous_system_organization) {
+            database.set(row.network, {
+              asn: row.autonomous_system_number || 'Unknown',
+              organization: row.autonomous_system_organization
+            });
+          }
+        })
+        .on('end', () => resolve())
+        .on('error', reject);
+    });
+  }
+
+  findASNForIP(ip) {
+    // Check if internal IP first
+    if (this.isInternalIP(ip)) {
+      return {
+        cidr: 'N/A',
+        asn: 'N/A',
+        organization: 'Internal Network',
+        is_internal: true,
+        network_type: 'private'
+      };
+    }
+
+    const ipNum = this.ipToNumber(ip);
+    const database = ip.includes(':') ? this.asnDatabaseV6 : this.asnDatabaseV4;
+    
+    let bestMatch = null;
+    
+    for (const [cidr, asnInfo] of database) {
+      if (this.isIPInCIDR(ip, cidr)) {
+        if (!bestMatch || this.getCIDRMask(cidr) > this.getCIDRMask(bestMatch.cidr)) {
+          bestMatch = { cidr, ...asnInfo };
+        }
+      }
+    }
+    
+    if (bestMatch) {
+      bestMatch.is_internal = false;
+      bestMatch.network_type = 'public';
+    }
+    
+    return bestMatch;
+  }
+
+  ipToNumber(ip) {
+    if (ip.includes(':')) {
+      return BigInt('0x' + ip.split(':').join(''));
+    } else {
+      return ip.split('.').reduce((acc, octet) => (acc << 8) + parseInt(octet), 0);
+    }
+  }
+
+  isIPInCIDR(ip, cidr) {
+    const [network, prefix] = cidr.split('/');
+    const prefixLength = parseInt(prefix);
+    
+    const ipNum = this.ipToNumber(ip);
+    const networkNum = this.ipToNumber(network);
+    const mask = this.getMask(prefixLength, ip.includes(':'));
+    
+    return (ipNum & mask) === (networkNum & mask);
+  }
+
+  getMask(prefixLength, isIPv6 = false) {
+    if (isIPv6) {
+      return BigInt(-1) << BigInt(128 - prefixLength);
+    } else {
+      return (-1) << (32 - prefixLength);
+    }
+  }
+
+  getCIDRMask(cidr) {
+    return parseInt(cidr.split('/')[1]);
+  }
+
+  loadBlacklist() {
+    try {
+      const blacklistPath = path.join(__dirname, '..', 'blacklist.txt');
+      console.log(`Looking for blacklist at: ${blacklistPath}`);
+      
+      if (fs.existsSync(blacklistPath)) {
+        const data = fs.readFileSync(blacklistPath, 'utf8');
+        this.knownThreats.malicious_ips = data
+          .split('\n')
+          .map(ip => ip.trim())
+          .filter(ip => ip && !ip.startsWith('#') && this.isValidIP(ip));
+        
+        console.log(`✅ Loaded ${this.knownThreats.malicious_ips.length} IPs from blacklist.txt`);
+      } else {
+        console.warn('⚠️ blacklist.txt not found');
+        this.knownThreats.malicious_ips = ['185.243.115.84', '45.77.80.133', '95.179.130.130'];
+      }
+    } catch (error) {
+      console.error('❌ Error loading blacklist:', error);
+      this.knownThreats.malicious_ips = ['185.243.115.84', '45.77.80.133', '95.179.130.130'];
+    }
   }
 
   async analyzeThreat(req, res) {
+    console.log('🔍 ThreatIntelAI analyzing with ASN, Country, and Internal Threat data...');
+    
     try {
       const alertData = req.body;
+      console.log('Received alert:', alertData['Event Type'] || 'Unknown');
       
-      if (!alertData || Object.keys(alertData).length === 0) {
-        return res.status(400).json({ error: 'No alert data provided' });
-      }
-
-      console.log('ThreatIntel analyzing:', alertData['Event Type'] || alertData['Event type'] || 'Unknown alert');
-
-      let iocs, localAnalysis, externalAnalysis, aiAnalysis, c2Analysis;
+      const iocs = this.extractIOCs(alertData);
+      const enrichedIOCs = await this.enrichWithASN(iocs);
+      const analysis = this.analyzeIOCs(iocs, enrichedIOCs);
       
-      try {
-        // Extract IOCs from the alert
-        iocs = this.extractIOCs(alertData);
-        
-        // Debug logging for IOC extraction
-        console.log('Extracted IPs:', iocs.ips);
-        console.log('Extracted Domains:', iocs.domains);
-        console.log('Extracted Hashes:', iocs.hashes);
-        
-        iocs.ips.forEach(ip => {
-          console.log(`IP Validation: ${ip} -> isValidIP: ${this.isValidIP(ip)}, isWhitelisted: ${this.isWhitelistedIP(ip)}`);
-        });
-        
-        // Check against known threats and benign entities
-        localAnalysis = this.analyzeLocally(iocs);
-        
-        // Perform C2-specific analysis
-        c2Analysis = this.analyzeC2Patterns(iocs, alertData);
-        
-        // Enrich with external intelligence (OTX and GeoIP)
-        externalAnalysis = await this.enrichWithExternalIntel(iocs);
-        
-        // If we have OpenAI API key, use AI analysis
-        if (process.env.OPENAI_API_KEY) {
-          aiAnalysis = await this.analyzeWithAI(iocs, externalAnalysis, c2Analysis);
-        } else {
-          aiAnalysis = {
-            verdict: "openai_not_configured",
-            confidence: 0,
-            reasoning: "OpenAI API key not configured"
-          };
+      // Create country summary
+      const countrySummary = {};
+      Object.values(enrichedIOCs).forEach(data => {
+        if (data.country_code !== 'XX') {
+          if (!countrySummary[data.country_code]) {
+            countrySummary[data.country_code] = {
+              country: data.country,
+              count: 0,
+              risk_level: data.risk_level,
+              organizations: new Set()
+            };
+          }
+          countrySummary[data.country_code].count++;
+          countrySummary[data.country_code].organizations.add(data.organization);
         }
-      } catch (analysisError) {
-        console.error('Analysis failed, returning fallback result:', analysisError);
-        
-        // Return a fallback analysis instead of failing completely
-        return res.json(this.createFallbackAnalysis(alertData, analysisError));
-      }
+      });
 
-      // Combine results with priority logic (include C2 analysis)
-      const finalVerdict = this.determineFinalVerdict(
-        localAnalysis, 
-        externalAnalysis, 
-        aiAnalysis,
-        c2Analysis,
-        iocs,
-        alertData
-      );
+      // Internal threat analysis
+      const internalAnalysis = this.analyzeInternalThreats(alertData, iocs, enrichedIOCs);
 
       const result = {
-        verdict: finalVerdict.verdict,
-        confidence: finalVerdict.confidence,
-        severity: finalVerdict.severity || 'low',
-        matched_iocs: [
-          ...(localAnalysis.matched_iocs || []), 
-          ...(externalAnalysis.matched_iocs || []),
-          ...(c2Analysis.indicators || [])
-        ],
-        local_analysis: localAnalysis,
-        c2_analysis: c2Analysis,
-        external_analysis: externalAnalysis,
-        ai_analysis: aiAnalysis,
-        extracted_iocs: iocs,
-        recommended_actions: finalVerdict.recommended_actions || [
-          'Review alert details',
-          'Monitor for similar activity',
-          'Check system logs for related events'
-        ],
-        internal_ip_count: iocs.ips.filter(ip => this.isInternalIP(ip)).length,
-        external_ip_count: iocs.ips.filter(ip => !this.isInternalIP(ip)).length,
-        whitelisted_ip_count: iocs.ips.filter(ip => this.isWhitelistedIP(ip)).length,
-        timestamp: new Date().toISOString()
-      };
-
-      res.json(result);
-
-    } catch (error) {
-      console.error('Threat intelligence analysis error:', error);
-      res.status(500).json({ 
-        error: 'Failed to analyze threat',
-        message: error.message,
-        timestamp: new Date().toISOString()
-      });
-    }
-  }
-
-  createFallbackAnalysis(alertData, error) {
-    let iocs;
-    try {
-      iocs = this.safeExtractIOCs(alertData);
-    } catch (extractionError) {
-      iocs = { ips: [], domains: [], hashes: [], users: [], processes: [] };
-    }
-    
-    const internalIPs = iocs.ips.filter(ip => this.isInternalIP(ip));
-    const whitelistedIPs = iocs.ips.filter(ip => this.isWhitelistedIP(ip));
-    
-    return {
-      verdict: "unknown",
-      confidence: 0,
-      severity: "low",
-      error: error.message,
-      matched_iocs: [],
-      recommended_actions: whitelistedIPs.length > 0 ? [
-        'Review whitelisted IP communication',
-        'Verify expected business traffic',
-        'Monitor for unusual patterns'
-      ] : internalIPs.length > 0 ? [
-        'Review internal IP communication',
-        'Check if internal traffic is expected',
-        'Monitor for unusual internal patterns'
-      ] : [
-        'Review alert details thoroughly',
-        'Check system logs for context',
-        'Monitor for similar activity'
-      ],
-      local_analysis: {
-        verdict: 'unknown',
-        confidence: 0,
-        severity: 'low',
-        reasons: [`Analysis failed: ${error.message}`],
-        total_iocs_checked: 0
-      },
-      extracted_iocs: iocs,
-      internal_ip_count: internalIPs.length,
-      whitelisted_ip_count: whitelistedIPs.length,
-      timestamp: new Date().toISOString()
-    };
-  }
-
-  safeExtractIOCs(alertData) {
-    const iocs = {
-      ips: new Set(),
-      domains: new Set(),
-      hashes: new Set(),
-      users: new Set(),
-      processes: new Set()
-    };
-
-    try {
-      const jsonString = JSON.stringify(alertData);
-      
-      // Extract IPs using regex with validation
-      const ipRegex = /\b(?:\d{1,3}\.){3}\d{1,3}\b/g;
-      const ips = jsonString.match(ipRegex) || [];
-      ips.forEach(ip => {
-        if (this.isValidIP(ip)) {
-          iocs.ips.add(ip);
-        }
-      });
-
-      // Extract domains with improved regex
-      const domainRegex = /[a-zA-Z0-9](?:[a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?)+/g;
-      const domains = jsonString.match(domainRegex) || [];
-      domains.forEach(domain => {
-        // Filter out common false positives and validate
-        if (domain.length <= 255 && 
-            !domain.startsWith('http') && 
-            !domain.startsWith('www.') && 
-            domain.includes('.') &&
-            domain.split('.').pop().length >= 2) {
-          iocs.domains.add(domain.toLowerCase());
-        }
-      });
-
-    } catch (error) {
-      console.warn('Safe IOC extraction failed:', error.message);
-    }
-
-    return {
-      ips: Array.from(iocs.ips),
-      domains: Array.from(iocs.domains),
-      hashes: Array.from(iocs.hashes),
-      users: Array.from(iocs.users),
-      processes: Array.from(iocs.processes)
-    };
-  }
-
-  // Fixed IP validation - use built-in isIP function
-  isValidIP(ip) {
-    return isIP(ip) !== 0;
-  }
-
-  // Check if IP is in whitelisted range
-  isWhitelistedIP(ip) {
-    if (!this.isValidIP(ip)) return false;
-    
-    // Check individual IP whitelist
-    if (BENIGN_ENTITIES.ips.includes(ip)) {
-      return true;
-    }
-    
-    // Check CIDR ranges
-    for (const range of BENIGN_ENTITIES.whitelisted_ranges) {
-      if (this.isIPInRange(ip, range)) {
-        return true;
-      }
-    }
-    
-    return false;
-  }
-
-  // Check if IP is in CIDR range
-  isIPInRange(ip, cidr) {
-    try {
-      const [range, bits] = cidr.split('/');
-      const mask = ~((1 << (32 - parseInt(bits))) - 1);
-      const ipLong = this.ipToLong(ip);
-      const rangeLong = this.ipToLong(range);
-      
-      return (ipLong & mask) === (rangeLong & mask);
-    } catch (error) {
-      console.warn(`CIDR check failed for ${ip} in ${cidr}:`, error.message);
-      return false;
-    }
-  }
-
-  // Convert IP to long integer
-  ipToLong(ip) {
-    return ip.split('.').reduce((acc, octet) => (acc << 8) + parseInt(octet, 10), 0) >>> 0;
-  }
-
-  analyzeC2Patterns(iocs, alertData) {
-    const c2Indicators = {
-      detected: false,
-      confidence: 0,
-      indicators: [],
-      reasons: []
-    };
-
-    try {
-      // 1. Check for suspicious domains
-      for (const domain of iocs.domains) {
-        for (const pattern of this.c2Patterns.suspicious_domains) {
-          if (pattern.test(domain)) {
-            c2Indicators.detected = true;
-            c2Indicators.confidence += 0.6;
-            c2Indicators.indicators.push(`suspicious_domain_pattern:${domain}`);
-            c2Indicators.reasons.push(`Domain matches C2 pattern: ${domain}`);
-            break;
-          }
-        }
-
-        const tld = domain.split('.').pop();
-        if (this.c2Patterns.high_risk_tlds.includes(tld)) {
-          c2Indicators.detected = true;
-            c2Indicators.confidence += 0.3;
-            c2Indicators.indicators.push(`high_risk_tld:${domain}`);
-            c2Indicators.reasons.push(`Domain uses high-risk TLD: ${tld}`);
-        }
-      }
-
-      // 2. Check for suspicious ports (defensive check) - skip if VPN port
-      if (alertData.dst_port || alertData.port) {
-        const port = parseInt(alertData.dst_port || alertData.port, 10);
-        if (!isNaN(port) && 
-            this.c2Patterns.suspicious_ports.includes(port) &&
-            !BENIGN_ENTITIES.vpn_ports.includes(port)) {
-          c2Indicators.detected = true;
-          c2Indicators.confidence += 0.4;
-          c2Indicators.indicators.push(`suspicious_port:${port}`);
-          c2Indicators.reasons.push(`Suspicious C2 port detected: ${port}`);
-        }
-      }
-
-      // 3. Check for beaconing patterns (defensive checks)
-      if ((alertData.timestamp || alertData.time) && alertData.duration) {
-        const beaconScore = this.detectBeaconing(alertData);
-        if (beaconScore > 0.5) {
-          c2Indicators.detected = true;
-          c2Indicators.confidence += beaconScore;
-          c2Indicators.indicators.push('beaconing_pattern');
-          c2Indicators.reasons.push(`Beaconing behavior detected (score: ${beaconScore.toFixed(2)})`);
-        }
-      }
-
-      // 4. Check for data exfiltration patterns (defensive checks)
-      if (alertData.bytes_sent > 0 && alertData.bytes_received > 0) {
-        const exfilScore = this.detectExfiltration(alertData);
-        if (exfilScore > 0) {
-          c2Indicators.detected = true;
-          c2Indicators.confidence += exfilScore;
-          c2Indicators.indicators.push('data_exfiltration');
-          c2Indicators.reasons.push(`Data exfiltration pattern detected (score: ${exfilScore.toFixed(2)})`);
-        }
-      }
-
-      // 5. Check if traffic is external and NOT whitelisted (potential C2)
-      for (const ip of iocs.ips) {
-        if (this.isExternalIP(ip) && !this.isWhitelistedIP(ip)) {
-          c2Indicators.detected = true;
-          c2Indicators.confidence += 0.2;
-          c2Indicators.indicators.push(`external_ip:${ip}`);
-          c2Indicators.reasons.push(`External IP communication: ${ip}`);
-        }
-      }
-
-      c2Indicators.confidence = Math.min(c2Indicators.confidence, 1.0);
-    } catch (error) {
-      console.warn('C2 analysis partially failed:', error.message);
-    }
-
-    return c2Indicators;
-  }
-
-  detectBeaconing(alertData) {
-    let score = 0;
-    
-    // Defensive check for bytes_sent
-    if (alertData.bytes_sent && alertData.bytes_sent > 0 && alertData.bytes_sent < 1000) {
-      score += 0.3;
-    }
-    
-    // Defensive check for protocol
-    if (alertData.protocol && typeof alertData.protocol === 'string') {
-      const c2Protocols = ['DNS', 'ICMP', 'HTTP', 'HTTPS'];
-      const protocolUpper = alertData.protocol.toUpperCase();
-      if (c2Protocols.includes(protocolUpper)) {
-        score += 0.2;
-      }
-    }
-    
-    return score;
-  }
-
-  detectExfiltration(alertData) {
-    let score = 0;
-    
-    // Defensive checks
-    if (alertData.bytes_sent > 10000 && alertData.bytes_received < 100) {
-      score += 0.5;
-    }
-    
-    if (alertData.encryption && alertData.encryption !== 'N/A') {
-      score += 0.3;
-    }
-    
-    return score;
-  }
-
-  isExternalIP(ip) {
-    if (!this.isValidIP(ip)) return false;
-    
-    // Check if it's whitelisted first
-    if (this.isWhitelistedIP(ip)) return false;
-    
-    // Then check if it's internal
-    return !this.isInternalIP(ip);
-  }
-
-  isInternalIP(ip) {
-    if (!this.isValidIP(ip)) return false;
-    
-    const octets = ip.split('.').map(Number);
-    return (octets[0] === 10) || 
-           (octets[0] === 192 && octets[1] === 168) ||
-           (octets[0] === 172 && octets[1] >= 16 && octets[1] <= 31);
-  }
-
-  extractIOCs(alertData) {
-    const iocs = {
-      ips: new Set(),
-      domains: new Set(),
-      hashes: new Set(),
-      users: new Set(),
-      processes: new Set()
-    };
-
-    try {
-      // Updated field mappings with more comprehensive coverage
-      const ipFields = ['srcip', 'dstip', 'remip', 'locip', 'ip', 'source_ip', 'destination_ip', 'client_ip', 'server_ip', 'reporting_ip', 'src', 'dst'];
-      const domainFields = ['domain', 'hostname', 'url', 'fqdn', 'host', 'dns', 'request_url', 'ssid', 'query', 'hostname', 'referrer'];
-      const hashFields = ['hash', 'file_hash', 'process_hash', 'md5', 'sha1', 'sha256', 'checksum', 'sha256'];
-      const userFields = ['user', 'username', 'account', 'login', 'actor', 'sender', 'receiver'];
-      const processFields = ['process', 'process_name', 'image_path', 'executable', 'cmdline', 'image'];
-
-      const addToSet = (set, value) => {
-        if (value && typeof value === 'string') {
-          if (set === iocs.ips && this.isValidIP(value)) {
-            set.add(value.toLowerCase());
-          } else if (set === iocs.domains && this.isValidDomain(value)) {
-            set.add(value.toLowerCase());
-          } else if (set !== iocs.ips && set !== iocs.domains) {
-            const cleanedValue = value.replace(/[^a-zA-Z0-9\.\-_:@]/g, '');
-            if (cleanedValue && cleanedValue.length > 1) {
-              set.add(cleanedValue.toLowerCase());
-            }
-          }
-        }
-      };
-
-      const extractFromObject = (obj, depth = 0) => {
-        if (depth > 10) return;
+        status: 'analyzed',
+        verdict: analysis.verdict,
+        confidence: analysis.confidence,
+        severity: analysis.severity,
+        matched_iocs: analysis.matched_iocs,
+        reasons: analysis.reasons,
+        recommended_actions: analysis.recommended_actions,
         
-        try {
-          for (const [key, value] of Object.entries(obj)) {
-            const keyLower = key.toLowerCase();
-            
-            if (typeof value === 'object' && value !== null) {
-              extractFromObject(value, depth + 1);
-              continue;
-            }
-
-            if (ipFields.some(field => keyLower.includes(field))) {
-              addToSet(iocs.ips, value);
-            }
-            else if (domainFields.some(field => keyLower.includes(field))) {
-              addToSet(iocs.domains, value);
-            }
-            else if (hashFields.some(field => keyLower.includes(field))) {
-              addToSet(iocs.hashes, value);
-            }
-            else if (userFields.some(field => keyLower.includes(field))) {
-              addToSet(iocs.users, value);
-            }
-            else if (processFields.some(field => keyLower.includes(field))) {
-              addToSet(iocs.processes, value);
-            }
-          }
-        } catch (error) {
-          console.warn('Error extracting from object:', error.message);
+        // Enhanced location data
+        geographical_analysis: {
+          countries_involved: Object.keys(countrySummary).length,
+          country_summary: Object.entries(countrySummary).map(([code, info]) => ({
+            country_code: code,
+            country: info.country,
+            ip_count: info.count,
+            risk_level: info.risk_level,
+            organizations: Array.from(info.organizations)
+          })),
+          detailed_ip_data: enrichedIOCs
+        },
+        
+        // Internal threat analysis
+        internal_threat_analysis: {
+          has_internal_ips: iocs.ips.some(ip => this.isInternalIP(ip)),
+          internal_ip_count: iocs.ips.filter(ip => this.isInternalIP(ip)).length,
+          critical_systems_involved: internalAnalysis.critical_systems,
+          suspicious_internal_patterns: internalAnalysis.suspicious_patterns,
+          internal_threat_score: internalAnalysis.threat_score,
+          internal_threat_level: internalAnalysis.threat_level
+        },
+        
+        metadata: {
+          analyzedAt: new Date().toISOString(),
+          total_ips_analyzed: iocs.ips.length,
+          internal_ips_analyzed: iocs.ips.filter(ip => this.isInternalIP(ip)).length,
+          blacklist_source: 'file',
+          asn_enrichment: true,
+          country_enrichment: true,
+          internal_threat_detection: true,
+          agent: 'ThreatIntelAI'
         }
       };
-
-      extractFromObject(alertData);
-
-      // Enhanced raw log extraction
-      if (alertData.raw_event_log || alertData['Raw Event Log'] || alertData['User Event Log']) {
-        try {
-          const rawLog = alertData.raw_event_log || alertData['Raw Event Log'] || alertData['User Event Log'];
-          this.extractFromRawLog(rawLog, iocs);
-        } catch (error) {
-          console.warn('Failed to parse raw event log:', error.message);
-        }
-      }
-
+      
+      console.log('✅ ThreatIntelAI complete:', result.verdict);
+      res.json(result);
+      
     } catch (error) {
-      console.error('Error in extractIOCs:', error);
+      console.error('ThreatIntelAI error:', error);
+      res.status(500).json({
+        status: 'error',
+        error: error.message,
+        timestamp: new Date().toISOString(),
+        agent: 'ThreatIntelAI'
+      });
     }
+  }
 
+  async enrichWithASN(iocs) {
+    const enriched = {};
+    
+    for (const ip of iocs.ips) {
+      const asnInfo = this.findASNForIP(ip);
+      const countryInfo = this.getCountryForIP(ip);
+      const isInternal = this.isInternalIP(ip);
+      const isCritical = this.isCriticalSystem(ip, '');
+      
+      enriched[ip] = {
+        ip: ip,
+        asn: asnInfo ? asnInfo.asn : 'Unknown',
+        organization: asnInfo ? asnInfo.organization : 'Unknown',
+        country: countryInfo.country,
+        country_code: countryInfo.country_code,
+        continent: countryInfo.continent,
+        continent_code: countryInfo.continent_code,
+        risk_level: this.assessGeoRisk(countryInfo, asnInfo),
+        accuracy_radius: countryInfo.accuracy_radius,
+        is_internal: isInternal,
+        is_critical_system: isCritical,
+        network_type: isInternal ? 'private' : 'public'
+      };
+    }
+    
+    return enriched;
+  }
+
+  // Analyze internal threats
+  analyzeInternalThreats(alert, iocs, enrichedIOCs) {
+    const internalIPs = iocs.ips.filter(ip => this.isInternalIP(ip));
+    let threat_score = 0;
+    let critical_systems = [];
+    let suspicious_patterns = [];
+    
+    // Check for internal IPs accessing critical systems
+    for (const ip of internalIPs) {
+      const ipData = enrichedIOCs[ip];
+      
+      // Check if this is a critical system
+      if (ipData?.is_critical_system) {
+        critical_systems.push({
+          ip: ip,
+          type: 'critical_system',
+          risk: 'high'
+        });
+        threat_score += 8;
+      }
+      
+      // Check for suspicious internal patterns
+      const patterns = this.detectInternalPatterns(alert, ip);
+      if (patterns.length > 0) {
+        suspicious_patterns.push(...patterns);
+        threat_score += patterns.length * 5;
+      }
+    }
+    
+    // Check for internal to internal communication with large data transfer
+    if (alert.sentbyte && parseInt(alert.sentbyte) > 10000000) {
+      if (iocs.ips.some(ip => this.isInternalIP(ip))) {
+        suspicious_patterns.push({
+          type: 'internal_data_exfiltration',
+          description: `Large data transfer (${alert.sentbyte} bytes) involving internal IPs`,
+          risk: 'high'
+        });
+        threat_score += 10;
+      }
+    }
+    
+    // Determine threat level
+    let threat_level = 'low';
+    if (threat_score >= 15) threat_level = 'critical';
+    else if (threat_score >= 10) threat_level = 'high';
+    else if (threat_score >= 5) threat_level = 'medium';
+    
     return {
-      ips: Array.from(iocs.ips),
-      domains: Array.from(iocs.domains),
-      hashes: Array.from(iocs.hashes),
-      users: Array.from(iocs.users),
-      processes: Array.from(iocs.processes)
+      threat_score,
+      threat_level,
+      critical_systems,
+      suspicious_patterns,
+      has_internal_threats: threat_score > 0
     };
   }
 
-  extractFromRawLog(rawLog, iocs) {
-    try {
-      // Improved IP regex
-      const ipRegex = /\b(?:\d{1,3}\.){3}\d{1,3}\b/g;
-      const ips = rawLog.match(ipRegex) || [];
-      ips.forEach(ip => {
-        if (this.isValidIP(ip)) {
-          iocs.ips.add(ip.toLowerCase());
-        }
+  // Detect suspicious internal patterns
+  detectInternalPatterns(alert, ip) {
+    const patterns = [];
+    
+    // Pattern 1: Internal scanning (multiple ports)
+    if (alert.dstport && alert.srcip === ip) {
+      // Check if this is part of a scan pattern
+      patterns.push({
+        type: 'potential_internal_scan',
+        description: `Internal IP ${ip} scanning port ${alert.dstport}`,
+        risk: 'medium'
       });
-      
-      // Improved domain regex that handles various formats
-      const domainRegex = /[a-zA-Z0-9](?:[a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?)+/g;
-      const domains = rawLog.match(domainRegex) || [];
-      domains.forEach(domain => {
-        // Filter out common false positives
-        if (domain.length <= 255 && 
-            !domain.startsWith('http') && 
-            !domain.startsWith('www.') && 
-            domain.includes('.') &&
-            domain.split('.').pop().length >= 2) {
-          iocs.domains.add(domain.toLowerCase());
-        }
-      });
-    } catch (error) {
-      console.warn('Raw log extraction failed:', error.message);
     }
+    
+    // Pattern 2: Access to known critical ports from internal IPs
+    const criticalPorts = [445, 3389, 22, 23, 135, 139];
+    if (alert.dstport && criticalPorts.includes(parseInt(alert.dstport))) {
+      patterns.push({
+        type: 'critical_port_access',
+        description: `Internal IP ${ip} accessing critical port ${alert.dstport}`,
+        risk: 'high'
+      });
+    }
+    
+    // Pattern 3: High volume traffic from internal IP
+    if (alert.sentbyte && parseInt(alert.sentbyte) > 5000000) {
+      patterns.push({
+        type: 'high_volume_internal_traffic',
+        description: `Internal IP ${ip} sending ${alert.sentbyte} bytes`,
+        risk: 'medium'
+      });
+    }
+    
+    return patterns;
   }
 
-  isValidDomain(domain) {
-    try {
-      // More permissive domain validation
-      const domainRegex = /^[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?)*$/;
-      return domainRegex.test(domain) && domain.length < 255 && domain.includes('.');
-    } catch (error) {
-      return false;
+  assessGeoRisk(countryInfo, asnInfo) {
+    // Internal IPs get low risk (unless they're in blacklist, handled elsewhere)
+    if (countryInfo.is_internal) {
+      return 'low';
     }
+    
+    const highRiskCountries = ['RU', 'CN', 'KP', 'IR', 'SY', 'VE'];
+    const mediumRiskCountries = ['BR', 'IN', 'VN', 'UA', 'TR', 'PK', 'NG'];
+    
+    const highRiskOrgs = ['TOR', 'PROXY', 'VPN', 'Hosting', 'Bulletproof'];
+    const mediumRiskOrgs = ['ISP', 'Telecom', 'Mobile'];
+    
+    let riskLevel = 'low';
+    const org = asnInfo?.organization?.toUpperCase() || '';
+    
+    if (highRiskCountries.includes(countryInfo.country_code)) {
+      riskLevel = 'high';
+    } else if (mediumRiskCountries.includes(countryInfo.country_code)) {
+      riskLevel = 'medium';
+    }
+    
+    if (highRiskOrgs.some(riskOrg => org.includes(riskOrg.toUpperCase()))) {
+      riskLevel = riskLevel === 'low' ? 'high' : riskLevel;
+    } else if (mediumRiskOrgs.some(riskOrg => org.includes(riskOrg.toUpperCase()))) {
+      riskLevel = riskLevel === 'low' ? 'medium' : riskLevel;
+    }
+    
+    return riskLevel;
   }
 
-  analyzeLocally(iocs) {
-    const matched_iocs = [];
+  analyzeIOCs(iocs, enrichedIOCs = {}) {
     let confidence = 0;
     let verdict = 'benign';
-    let reasons = [];
     let severity = 'low';
-    let recommended_actions = [];
+    const matched_iocs = [];
+    const reasons = [];
+    const recommended_actions = [];
 
-    // Check for internal IPs first - treat as benign by default
-    const internalIPs = iocs.ips.filter(ip => this.isInternalIP(ip));
-    const externalIPs = iocs.ips.filter(ip => !this.isInternalIP(ip));
-    const whitelistedIPs = iocs.ips.filter(ip => this.isWhitelistedIP(ip));
-
-    if (internalIPs.length > 0) {
-      internalIPs.forEach(ip => {
-        matched_iocs.push(`internal_ip:${ip}`);
-        reasons.push(`Internal IP detected: ${ip}`);
-      });
-      confidence = 0.1;
-      severity = 'low';
-      recommended_actions.push('Review internal IP communication for signs of compromise');
-      recommended_actions.push('Check if internal IP is expected in this context');
-    }
-
-    if (whitelistedIPs.length > 0) {
-      whitelistedIPs.forEach(ip => {
-        matched_iocs.push(`whitelisted_ip:${ip}`);
-        reasons.push(`Whitelisted IP detected: ${ip}`);
-      });
-      // Whitelisted IPs are very safe
-      confidence = -0.3;
-      severity = 'info';
-      recommended_actions.push('Verify whitelisted IP communication is expected');
-    }
-
-    // Check external IPs against known threats (excluding whitelisted)
-    for (const ip of externalIPs) {
-      if (this.isWhitelistedIP(ip)) continue; // Skip whitelisted
-      
-      if (BENIGN_ENTITIES.ips.includes(ip)) {
-        matched_iocs.push(`benign_ip:${ip}`);
-        reasons.push(`Known benign IP: ${ip}`);
-        confidence -= 0.2;
+    // First, show country information for every IP
+    for (const ip of iocs.ips) {
+      if (enrichedIOCs[ip]) {
+        const geoData = enrichedIOCs[ip];
+        
+        // Always show country information for every IP
+        if (geoData.country !== 'Unknown') {
+          reasons.push(`📍 ${ip} originated from ${geoData.country} (${geoData.country_code}) - ${geoData.organization}`);
+        } else {
+          reasons.push(`📍 ${ip} - Country: Unknown - ${geoData.organization}`);
+        }
+        
+        // Highlight internal IPs
+        if (geoData.is_internal) {
+          reasons.push(`   🏠 INTERNAL IP detected (${geoData.network_type} network)`);
+          
+          // Check if it's a critical system
+          if (geoData.is_critical_system) {
+            reasons.push(`   ⚠️ CRITICAL SYSTEM: ${ip} is identified as critical infrastructure`);
+            matched_iocs.push(`critical_system:${ip}`);
+            confidence = Math.max(confidence, 0.7);
+            verdict = 'suspicious';
+            severity = 'high';
+            recommended_actions.push('Monitor access to critical system');
+          }
+        }
       }
-      
+
+      // Check for malicious IPs (blacklist)
       if (this.knownThreats.malicious_ips.includes(ip)) {
         matched_iocs.push(`malicious_ip:${ip}`);
-        confidence += 0.8;
-        reasons.push(`Known malicious IP: ${ip}`);
+        confidence = Math.max(confidence, 0.8);
+        verdict = 'malicious';
         severity = 'high';
-        recommended_actions.push('Block malicious IP immediately');
-        recommended_actions.push('Investigate affected systems');
+        reasons.push(`🚨 KNOWN MALICIOUS IP: ${ip} (from blacklist)`);
+        recommended_actions.push('IMMEDIATE: Block IP at firewall');
+      }
+
+      // Add risk-based reasoning
+      if (enrichedIOCs[ip]) {
+        const geoData = enrichedIOCs[ip];
+        if (geoData.risk_level === 'high') {
+          reasons.push(`⚠️ HIGH RISK: ${ip} from ${geoData.country} belongs to ${geoData.organization}`);
+          confidence = Math.max(confidence, 0.7);
+          if (verdict !== 'malicious') {
+            verdict = 'suspicious';
+            severity = 'medium';
+          }
+          recommended_actions.push('Investigate traffic from high-risk country');
+        } else if (geoData.risk_level === 'medium') {
+          reasons.push(`ℹ️ MEDIUM RISK: ${ip} from ${geoData.country} - ${geoData.organization}`);
+          confidence = Math.max(confidence, 0.5);
+          if (verdict === 'benign') {
+            verdict = 'suspicious';
+            severity = 'low';
+          }
+        }
       }
     }
 
-    // Check domains against known threats
+    // Domain checks
     for (const domain of iocs.domains) {
-      console.log(`Checking domain: ${domain} against known threats`);
-      
-      if (BENIGN_ENTITIES.domains.some(benign => domain.includes(benign))) {
-        matched_iocs.push(`benign_domain:${domain}`);
-        reasons.push(`Known benign domain: ${domain}`);
-        confidence -= 0.2;
-      }
-      
       if (this.knownThreats.malicious_domains.includes(domain)) {
         matched_iocs.push(`malicious_domain:${domain}`);
-        confidence += 0.9; // Higher confidence for malicious domains
-        reasons.push(`Known malicious domain: ${domain}`);
+        confidence = Math.max(confidence, 0.9);
+        verdict = 'malicious';
         severity = 'high';
-        recommended_actions.push('Block malicious domain immediately');
-        recommended_actions.push('Investigate DNS queries for this domain');
-        recommended_actions.push('Check all systems for infections');
+        reasons.push(`🚨 KNOWN MALICIOUS DOMAIN: ${domain}`);
+        recommended_actions.push('IMMEDIATE: Block domain at DNS/web proxy');
       }
     }
 
-    for (const hash of iocs.hashes) {
-      if (this.knownThreats.malicious_hashes.includes(hash)) {
-        matched_iocs.push(`malicious_hash:${hash}`);
-        confidence += 0.9;
-        reasons.push(`Known malicious hash: ${hash}`);
-        severity = 'critical';
-        recommended_actions.push('Quarantine file immediately');
-        recommended_actions.push('Scan all systems for this hash');
-        recommended_actions.push('Investigate file origin and propagation');
+    // Summary based on findings
+    if (matched_iocs.length === 0) {
+      if (iocs.ips.length > 0) {
+        // Check if we have any high-risk countries
+        const highRiskIPs = Object.values(enrichedIOCs).filter(data => data.risk_level === 'high');
+        if (highRiskIPs.length > 0) {
+          reasons.push(`🔍 No direct threats detected, but ${highRiskIPs.length} IP(s) from high-risk countries`);
+        } else {
+          const internalIPs = iocs.ips.filter(ip => this.isInternalIP(ip));
+          if (internalIPs.length > 0) {
+            reasons.push(`🏠 ${internalIPs.length} internal IP(s) detected - monitoring internal traffic`);
+          } else {
+            reasons.push('✅ No known threats detected in blacklist');
+          }
+        }
+      } else {
+        reasons.push('ℹ️ No IP addresses found to analyze');
       }
-    }
-
-    // Adjust verdict based on confidence
-    if (confidence > 0.8) {
-      verdict = 'malicious';
-      severity = 'high';
-    } else if (confidence > 0.3) {
-      verdict = 'suspicious';
-      severity = 'medium';
-    } else if (internalIPs.length > 0 && externalIPs.length === 0) {
-      // If only internal IPs are present, keep as benign
-      verdict = 'benign';
-      severity = 'low';
-    } else if (whitelistedIPs.length > 0) {
-      // If whitelisted IPs are present, very likely benign
-      verdict = 'benign';
-      severity = 'info';
-      confidence = 0.9;
-    } else if (matched_iocs.length > 0) {
-      verdict = 'suspicious_low_confidence';
-      severity = 'low';
+      recommended_actions.push('Continue monitoring');
+    } else {
+      reasons.push(`🎯 ${matched_iocs.length} direct threat(s) identified`);
     }
 
     return {
       verdict,
-      confidence: Math.min(Math.max(confidence, 0), 1.0),
+      confidence,
       severity,
       matched_iocs,
       reasons,
-      recommended_actions: recommended_actions.length > 0 ? recommended_actions : [
-        'Review alert details',
-        'Monitor for similar activity',
-        'Check system logs for related events'
-      ],
-      total_iocs_checked: iocs.ips.length + iocs.domains.length + iocs.hashes.length,
-      internal_ip_count: internalIPs.length,
-      external_ip_count: externalIPs.length,
-      whitelisted_ip_count: whitelistedIPs.length
+      recommended_actions
     };
   }
 
-  async enrichWithExternalIntel(iocs) {
-    const results = {
-      verdict: 'unknown',
-      confidence: 0,
-      severity: 'low',
-      matched_iocs: [],
-      reasons: [],
-      otx_results: {},
-      geoip_results: {}
-    };
-
-    try {
-      for (const ip of iocs.ips) {
-        if (!this.isValidIP(ip) || this.isWhitelistedIP(ip)) continue;
-
-        const [otxResult, geoipResult] = await Promise.allSettled([
-          this.checkOTX(ip),
-          this.checkGeoIP(ip)
-        ]);
-
-        if (otxResult.status === 'fulfilled' && otxResult.value) {
-          results.otx_results[ip] = otxResult.value;
-          if (otxResult.value.pulse_count > 0) {
-            results.matched_iocs.push(`otx_malicious_ip:${ip}`);
-            results.confidence += 0.4;
-            results.reasons.push(`OTX found ${otxResult.value.pulse_count} threat pulses for IP: ${ip}`);
-          }
-        }
-
-        if (geoipResult.status === 'fulfilled' && geoipResult.value) {
-          results.geoip_results[ip] = geoipResult.value;
-          if (this.isSuspiciousGeoLocation(geoipResult.value)) {
-            results.matched_iocs.push(`suspicious_geo_ip:${ip}`);
-            results.confidence += 0.2;
-            results.reasons.push(`Suspicious geographic location: ${geoipResult.value.country} (${geoipResult.value.country_code})`);
-          }
-        }
+  extractIOCs(alertData) {
+    const iocs = { ips: [], domains: [] };
+    const ipFields = ['srcip', 'dstip', 'src', 'dst', 'ip', 'source_ip', 'dest_ip', 'client_ip', 'server_ip', 'source_address', 'destination_address'];
+    
+    for (const field of ipFields) {
+      if (alertData[field] && this.isValidIP(alertData[field])) {
+        iocs.ips.push(alertData[field]);
       }
-
-      for (const domain of iocs.domains) {
-        const otxResult = await this.checkOTX(domain);
-        if (otxResult && otxResult.pulse_count > 0) {
-          results.otx_results[domain] = otxResult;
-          results.matched_iocs.push(`otx_malicious_domain:${domain}`);
-          results.confidence += 0.7; // Higher confidence for malicious domains
-          results.reasons.push(`OTX found ${otxResult.pulse_count} threat pulses for domain: ${domain}`);
-        }
-      }
-
-      // FIXED: Use results.confidence instead of undefined confidence variable
-      if (results.confidence > 0.7) {
-        results.verdict = 'malicious';
-        // DON'T overwrite severity if it's already set to critical
-        if (results.severity !== 'critical') {
-          results.severity = 'high';
-        }
-      } else if (results.confidence > 0.3) {
-        results.verdict = 'suspicious';
-        results.severity = 'medium';
-      } else if (results.matched_iocs.length > 0) {
-        results.verdict = 'suspicious_low_confidence';
-        results.severity = 'low';
-      }
-
-      results.confidence = Math.min(results.confidence, 1.0);
-
-    } catch (error) {
-      console.error('External intelligence enrichment failed:', error);
-      results.reasons.push(`External intelligence failed: ${error.message}`);
     }
-
-    return results;
+    
+    if (typeof alertData === 'object') {
+      this.searchForIPsInObject(alertData, iocs);
+    }
+    
+    return iocs;
   }
 
-  async checkOTX(ioc, retries = 2) {
-    if (!process.env.OTX_API_KEY) {
-      return { pulse_count: 0, pulses: [], reputation: 0 };
-    }
-
-    const cacheKey = `otx:${ioc}`;
-    const cached = this.otxCache.get(cacheKey);
+  searchForIPsInObject(obj, iocs, depth = 0) {
+    if (depth > 5) return;
     
-    if (cached && (Date.now() - cached.timestamp) < this.cacheTTL) {
-      return cached.data;
-    }
-
-    try {
-      const type = this.isValidIP(ioc) ? 'IPv4' : 'domain';
-      const response = await axios.get(
-        `https://otx.alienvault.com/api/v1/indicators/${type}/${ioc}/general`,
-        {
-          headers: { 'X-OTX-API-KEY': process.env.OTX_API_KEY },
-          timeout: 10000
+    for (const key in obj) {
+      if (typeof obj[key] === 'string') {
+        const ipMatches = obj[key].match(/(?:\d{1,3}\.){3}\d{1,3}/g);
+        if (ipMatches) {
+          ipMatches.forEach(ip => {
+            if (this.isValidIP(ip) && !iocs.ips.includes(ip)) {
+              iocs.ips.push(ip);
+            }
+          });
         }
-      );
-
-      const result = {
-        pulse_count: response.data.pulse_info.count,
-        pulses: response.data.pulse_info.pulses,
-        reputation: response.data.reputation
-      };
-
-      this.otxCache.set(cacheKey, { data: result, timestamp: Date.now() });
-      return result;
-
-    } catch (error) {
-      if (error.response?.status >= 500 && retries > 0) {
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        return this.checkOTX(ioc, retries - 1);
+      } else if (typeof obj[key] === 'object' && obj[key] !== null) {
+        this.searchForIPsInObject(obj[key], iocs, depth + 1);
       }
-      if (error.response?.status === 404) {
-        return { pulse_count: 0, pulses: [], reputation: 0 };
-      }
-      if (error.response?.status === 400) {
-        console.warn(`OTX bad request for ${ioc}:`, error.message);
-        return { pulse_count: 0, pulses: [], reputation: 0 };
-      }
-      console.error(`OTX check failed for ${ioc}:`, error.message);
-      return { pulse_count: 0, pulses: [], reputation: 0 };
     }
   }
 
-  async checkGeoIP(ip) {
-    const cacheKey = `geoip:${ip}`;
-    const cached = this.geoipCache.get(cacheKey);
-    
-    if (cached && (Date.now() - cached.timestamp) < this.cacheTTL) {
-      return cached.data;
-    }
+  isValidIP(ip) {
+    const ipRegex = /^(?:\d{1,3}\.){3}\d{1,3}$/;
+    if (!ipRegex.test(ip)) return false;
+    const octets = ip.split('.');
+    return octets.every(octet => {
+      const num = parseInt(octet, 10);
+      return num >= 0 && num <= 255;
+    });
+  }
 
+  isInternalIP(ip) {
+    if (!ip || ip === 'Unknown') return false;
+    
+    // Private IP ranges
+    const internalRanges = [
+      '10.', '172.16.', '172.17.', '172.18.', '172.19.',
+      '172.20.', '172.21.', '172.22.', '172.23.', '172.24.',
+      '172.25.', '172.26.', '172.27.', '172.28.', '172.29.',
+      '172.30.', '172.31.', '192.168.'
+    ];
+    
+    return internalRanges.some(range => ip.startsWith(range));
+  }
+
+  isCriticalSystem(ip, hostname) {
+    if (!hostname) hostname = '';
+    
+    // Check against known critical systems
+    const isCriticalByName = this.knownThreats.critical_internal_systems.some(system => 
+      system.hostname && hostname.toLowerCase().includes(system.hostname.toLowerCase()));
+    
+    const isCriticalByIP = this.knownThreats.critical_internal_systems.some(system => 
+      system.ip === ip);
+    
+    // Common critical system indicators
+    const criticalIndicators = ['dc', 'sql', 'database', 'fileserver', 'gateway', 'firewall', 'router'];
+    const hasCriticalIndicator = criticalIndicators.some(indicator => 
+      hostname.toLowerCase().includes(indicator));
+    
+    return isCriticalByName || isCriticalByIP || hasCriticalIndicator;
+  }
+
+  reloadBlacklist() {
+    this.loadBlacklist();
+    return { success: true, count: this.knownThreats.malicious_ips.length };
+  }
+
+  // New endpoint for internal threat analysis
+  async analyzeInternalThreatsEndpoint(req, res) {
     try {
-      const response = await axios.get(`https://ipapi.co/${ip}/json/`, {
-        timeout: 5000
+      const alert = req.body;
+      const iocs = this.extractIOCs(alert);
+      const enrichedIOCs = await this.enrichWithASN(iocs);
+      const internalAnalysis = this.analyzeInternalThreats(alert, iocs, enrichedIOCs);
+      
+      res.json({
+        status: 'success',
+        analysis: internalAnalysis,
+        ip_details: enrichedIOCs,
+        metadata: {
+          analyzedAt: new Date().toISOString(),
+          total_ips: iocs.ips.length,
+          internal_ips: iocs.ips.filter(ip => this.isInternalIP(ip)).length,
+          agent: 'ThreatIntelAI'
+        }
       });
-
-      const result = {
-        country: response.data.country_name,
-        country_code: response.data.country_code,
-        city: response.data.city,
-        isp: response.data.org,
-        asn: response.data.asn
-      };
-
-      this.geoipCache.set(cacheKey, { data: result, timestamp: Date.now() });
-      return result;
-
     } catch (error) {
-      console.error(`GeoIP check failed for ${ip}:`, error.message);
-      return null;
-    }
-  }
-
-  isSuspiciousGeoLocation(geoData) {
-    if (!geoData || !geoData.country_code) return false;
-    
-    // Only flag extreme cases, not broad categories
-    const highRiskCountries = ['KP']; // Only North Korea
-    return highRiskCountries.includes(geoData.country_code);
-  }
-
-  determineFinalVerdict(localAnalysis, externalAnalysis, aiAnalysis, c2Analysis, iocs, alertData) {
-    console.log('Final verdict analysis:');
-    console.log('Local analysis verdict:', localAnalysis.verdict);
-    console.log('Local analysis confidence:', localAnalysis.confidence);
-    console.log('Malicious domains found:', iocs.domains.filter(d => this.knownThreats.malicious_domains.includes(d)));
-    console.log('Malicious IPs found:', iocs.ips.filter(ip => this.knownThreats.malicious_ips.includes(ip)));
-    const internalIPs = iocs.ips.filter(ip => this.isInternalIP(ip));
-    const externalIPs = iocs.ips.filter(ip => !this.isInternalIP(ip));
-    const whitelistedIPs = iocs.ips.filter(ip => this.isWhitelistedIP(ip));
-
-    // Extract event type for context-aware analysis
-    const eventType = alertData['Event Type'] || alertData['Event type'] || '';
-    const eventName = alertData['Event Name'] || '';
-    
-    console.log('Event context:', { eventType, eventName });
-
-    // Initialize variables for the final verdict
-    let verdict = 'unknown';
-    let confidence = 0;
-    let severity = 'low';
-    let reason = '';
-    let recommended_actions = [];
-
-    // **NEW: Handle DNS events specifically**
-    if (eventType.includes('dns') || eventType.includes('DNS')) {
-      const maliciousDomains = iocs.domains.filter(domain => 
-        this.knownThreats.malicious_domains.includes(domain)
-      );
-      
-      if (maliciousDomains.length > 0) {
-        return {
-          verdict: 'malicious',
-          confidence: 0.95, // Higher confidence for DNS events
-          severity: 'high',
-          reason: `DNS query to known malicious domain: ${maliciousDomains.join(', ')}`,
-          recommended_actions: [
-            'Immediately block DNS queries to this domain',
-            'Investigate source device for compromise',
-            'Check DNS logs for other queries to suspicious domains',
-            'Update DNS blacklist and firewall rules'
-          ]
-        };
-      }
-      
-      // For benign DNS queries, provide specific guidance
-      if (iocs.domains.length > 0 && maliciousDomains.length === 0) {
-        return {
-          verdict: 'benign',
-          confidence: 0.8,
-          severity: 'info',
-          reason: 'DNS query to non-malicious domain',
-          recommended_actions: [
-            'Monitor DNS patterns for anomalies',
-            'Verify domain reputation periodically',
-            'Review DNS filtering policies'
-          ]
-        };
-      }
-    }
-
-    // **NEW: Handle traffic events specifically**
-    if (eventType.includes('traffic')) {
-      const maliciousIPs = iocs.ips.filter(ip => 
-        this.knownThreats.malicious_ips.includes(ip)
-      );
-      
-      if (maliciousIPs.length > 0) {
-        const action = alertData.action || 'unknown';
-        return {
-          verdict: 'malicious',
-          confidence: action === 'deny' ? 0.9 : 0.8,
-          severity: 'high',
-          reason: `Traffic involving known malicious IP: ${maliciousIPs.join(', ')} (action: ${action})`,
-          recommended_actions: [
-            'Block malicious IP at firewall level',
-            'Investigate communication patterns',
-            'Check for data exfiltration',
-            'Review all systems that communicated with this IP'
-          ]
-        };
-      }
-    }
-
-    // **NEW: Handle security events (virus, attack, etc.)**
-    if (eventType.includes('virus') || eventType.includes('attack') || eventType.includes('anomaly')) {
-      const maliciousHashes = iocs.hashes.filter(hash => 
-        this.knownThreats.malicious_hashes.includes(hash)
-      );
-      
-      if (maliciousHashes.length > 0) {
-        return {
-          verdict: 'malicious',
-          confidence: 0.99, // Very high confidence for hash matches
-          severity: 'critical',
-          reason: `Known malware hash detected: ${maliciousHashes.join(', ')}`,
-          recommended_actions: [
-            'Immediately quarantine infected files',
-            'Scan all systems for this hash',
-            'Investigate infection vector',
-            'Update antivirus signatures'
-          ]
-        };
-      }
-    }
-
-    // **NEW: Handle VPN/IPSec events specifically**
-    if (eventType.includes('ipsec') || eventType.includes('vpn')) {
-      return {
-        verdict: 'benign',
-        confidence: 0.9,
-        severity: 'info',
-        reason: 'VPN/IPSec traffic detected - legitimate business communication',
-        recommended_actions: [
-          'Verify VPN tunnel authorization',
-          'Monitor VPN performance metrics',
-          'Review VPN access logs for anomalies'
-        ]
-      };
-    }
-
-    // **NEW: Handle wireless/rogue AP events**
-    if (eventType.includes('wireless') || eventType.includes('rogue')) {
-      return {
-        verdict: 'suspicious',
-        confidence: 0.7,
-        severity: 'medium',
-        reason: 'Wireless security event detected',
-        recommended_actions: [
-          'Investigate rogue access point',
-          'Check wireless network configuration',
-          'Review connected devices',
-          'Monitor for unauthorized access'
-        ]
-      };
-    }
-
-    // **NEW: Handle denied traffic specifically**
-    if (alertData.action === 'deny') {
-      return {
-        verdict: 'benign',
-        confidence: 0.7,
-        severity: 'low',
-        reason: 'Firewall correctly blocked suspicious traffic',
-        recommended_actions: [
-          'Review firewall rule that triggered the block',
-          'Verify if this is expected behavior',
-          'Monitor for repeated block attempts'
-        ]
-      };
-    }
-
-    // Rest of the existing logic for non-specific events
-    const maliciousDomains = iocs.domains.filter(domain => 
-      this.knownThreats.malicious_domains.includes(domain)
-    );
-    
-    if (maliciousDomains.length > 0) {
-      return {
-        verdict: 'malicious',
-        confidence: 0.9,
-        severity: 'high',
-        reason: `Known malicious domain detected: ${maliciousDomains.join(', ')}`,
-        recommended_actions: [
-          'Block malicious domain immediately',
-          'Investigate DNS queries for this domain',
-          'Check all systems for infections'
-        ]
-      };
-    }
-    
-    // If whitelisted IPs are present, treat as benign
-    if (whitelistedIPs.length > 0) {
-      return {
-        verdict: 'benign',
-        confidence: 0.9,
-        severity: 'info',
-        reason: 'Whitelisted business infrastructure IP addresses detected',
-        recommended_actions: [
-          'Verify whitelisted IP communication is expected',
-          'Monitor for any unusual patterns in business traffic'
-        ]
-      };
-    }
-
-    // High confidence C2 detection overrides internal IP benign status
-    if (c2Analysis.detected && c2Analysis.confidence > 0.6) {
-      return {
-        verdict: 'malicious',
-        confidence: c2Analysis.confidence,
-        severity: 'high',
-        reason: 'C2 communication detected despite internal IP',
-        recommended_actions: [
-          'Investigate internal system for compromise',
-          'Isolate affected system from network',
-          'Conduct forensic analysis'
-        ]
-      };
-    }
-
-    if (externalAnalysis.verdict !== 'unknown') {
-      return {
-        verdict: externalAnalysis.verdict,
-        confidence: externalAnalysis.confidence,
-        severity: externalAnalysis.severity || 'medium',
-        reason: 'External threat intelligence match',
-        recommended_actions: externalAnalysis.recommended_actions || []
-      };
-    }
-
-    if (aiAnalysis && aiAnalysis.verdict !== 'unknown' && aiAnalysis.verdict !== 'openai_not_configured') {
-      return {
-        verdict: aiAnalysis.verdict,
-        confidence: aiAnalysis.confidence,
-        severity: aiAnalysis.severity || 'medium',
-        reason: aiAnalysis.reasoning || 'AI analysis result',
-        recommended_actions: aiAnalysis.recommended_actions || []
-      };
-    }
-
-    if (internalIPs.length > 0 && externalIPs.length > 0) {
-      return {
-        verdict: 'suspicious',
-        confidence: 0.6,
-        severity: 'medium',
-        reason: 'Internal to external communication detected',
-        recommended_actions: [
-          'Review internal-external communication patterns',
-          'Check if external communication is authorized',
-          'Monitor for data exfiltration signs'
-        ]
-      };
-    }
-
-    if (localAnalysis.verdict !== 'unknown') {
-      return {
-        verdict: localAnalysis.verdict,
-        confidence: localAnalysis.confidence,
-        severity: localAnalysis.severity,
-        reason: 'Local analysis result',
-        recommended_actions: localAnalysis.recommended_actions
-      };
-    }
-
-    return { 
-      verdict: 'unknown', 
-      confidence: 0,
-      severity: 'low',
-      reason: 'Insufficient information for determination',
-      recommended_actions: ['Review alert details thoroughly']
-    };
-  }
-
-  async analyzeWithAI(iocs, externalAnalysis, c2Analysis, retries = 3) {
-    if (!process.env.OPENAI_API_KEY) {
-      return {
-        verdict: "openai_not_configured",
-        confidence: 0,
-        reasoning: "OpenAI API key not configured"
-      };
-    }
-
-    try {
-      const hasIOCs = iocs.ips.length > 0 || iocs.domains.length > 0 || iocs.hashes.length > 0;
-      if (!hasIOCs) {
-        return { verdict: 'no_iocs_to_analyze' };
-      }
-
-      const context = externalAnalysis ? `External analysis results: ${JSON.stringify(externalAnalysis)}` : '';
-      const c2Context = c2Analysis ? `C2 analysis results: ${JSON.stringify(c2Analysis)}` : '';
-
-      const response = await axios.post('https://api.openai.com/v1/chat/completions', {
-        model: process.env.OPENAI_MODEL || "gpt-4o",
-        messages: [
-          {
-            role: "system",
-            content: `You are a cybersecurity threat intelligence analyst specializing in C2 detection. Consider:
-            - OTX pulse counts > 0 indicate malicious reputation
-            - GeoIP data from high-risk countries increases suspicion
-            - Look for C2 patterns: DGA domains, suspicious ports (4444, 8080, 1337)
-            - Beaconing behavior: regular small data transfers
-            - Data exfiltration: large outbound, small inbound
-            - Internal IPs can still be part of C2 if communicating externally
-            - Known CDNs and cloud providers are typically benign
-            - Whitelisted IP ranges (109.245.0.0/16) are business infrastructure
-            - IPSec VPN traffic on port 500 is legitimate business traffic
-            ${context}
-            ${c2Context}
-            Respond with JSON: { 
-              verdict: "malicious|suspicious|benign|unknown", 
-              confidence: 0.0-1.0, 
-              reasoning: string,
-              c2_indicators: string[] 
-            }`
-          },
-          {
-            role: "user",
-            content: `Analyze these IOCs for C2 activity:\n${JSON.stringify(iocs, null, 2)}`
-          }
-        ],
-        response_format: { type: "json_object" },
-        max_tokens: 600,
-        temperature: 0.1
-      }, {
-        headers: {
-          "Authorization": `Bearer ${process.env.OPENAI_API_KEY}`,
-          "Content-Type": "application/json"
-        },
-        timeout: 30000
-      });
-
-      return JSON.parse(response.data.choices[0].message.content);
-
-    } catch (error) {
-      if (error.response?.status === 429 && retries > 0) {
-        const delay = Math.pow(2, 4 - retries) * 1000; // Exponential backoff
-        await new Promise(resolve => setTimeout(resolve, delay));
-        return this.analyzeWithAI(iocs, externalAnalysis, c2Analysis, retries - 1);
-      }
-      
-      console.error('OpenAI analysis failed:', error.message);
-      return {
-        verdict: "analysis_failed",
+      res.status(500).json({
+        status: 'error',
         error: error.message,
-        confidence: 0
-      };
+        timestamp: new Date().toISOString()
+      });
     }
-  }
-
-  addThreats(newThreats) {
-    if (newThreats.ips) {
-      this.knownThreats.malicious_ips = [...new Set([...this.knownThreats.malicious_ips, ...newThreats.ips])];
-    }
-    if (newThreats.domains) {
-      this.knownThreats.malicious_domains = [...new Set([...this.knownThreats.malicious_domains, ...newThreats.domains])];
-    }
-    if (newThreats.hashes) {
-      this.knownThreats.malicious_hashes = [...new Set([...this.knownThreats.malicious_hashes, ...newThreats.hashes])];
-    }
-  }
-
-  getThreatDatabase() {
-    return this.knownThreats;
   }
 }
 
 const threatIntel = new ThreatIntelAI();
 
-router.post('/analyze', threatIntel.analyzeThreat.bind(threatIntel));
-
-router.post('/threats', (req, res) => {
-  try {
-    const { threats } = req.body;
-    threatIntel.addThreats(threats);
-    res.json({ 
-      success: true, 
-      message: 'Threats added successfully',
-      current_threats: threatIntel.getThreatDatabase()
-    });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
+// Express routes
+router.post('/analyze', (req, res) => {
+  threatIntel.analyzeThreat(req, res);
 });
 
-router.get('/threats', (req, res) => {
-  res.json(threatIntel.getThreatDatabase());
+// New endpoint for internal threat analysis
+router.post('/analyze/internal', (req, res) => {
+  threatIntel.analyzeInternalThreatsEndpoint(req, res);
 });
 
 router.get('/health', (req, res) => {
   res.json({ 
-    status: 'healthy', 
-    has_openai: !!process.env.OPENAI_API_KEY,
-    has_otx: !!process.env.OTX_API_KEY,
+    status: 'healthy',
+    agent: 'ThreatIntelAI',
     threat_counts: {
-      ips: threatIntel.knownThreats.malicious_ips.length,
-      domains: threatIntel.knownThreats.malicious_domains.length,
-      hashes: threatIntel.knownThreats.malicious_hashes.length
+      malicious_ips: threatIntel.knownThreats.malicious_ips.length,
+      malicious_domains: threatIntel.knownThreats.malicious_domains.length,
+      internal_patterns: threatIntel.knownThreats.suspicious_internal_patterns.length,
+      critical_systems: threatIntel.knownThreats.critical_internal_systems.length
     },
-    cache_stats: {
-      otx: threatIntel.otxCache.size,
-      geoip: threatIntel.geoipCache.size
+    asn_databases: {
+      ipv4: threatIntel.asnDatabaseV4.size,
+      ipv6: threatIntel.asnDatabaseV6.size
+    },
+    country_database: {
+      loaded: threatIntel.countryReader !== null,
+      type: 'MMDB',
+      accuracy: 'High'
+    },
+    blacklist_loaded: threatIntel.knownThreats.malicious_ips.length > 0,
+    asn_enrichment: true,
+    country_enrichment: true,
+    internal_threat_detection: true,
+    capabilities: [
+      'ip_reputation_checking',
+      'geolocation_enrichment',
+      'asn_enrichment',
+      'internal_ip_detection',
+      'critical_system_identification',
+      'internal_threat_pattern_detection'
+    ]
+  });
+});
+
+router.get('/asn/lookup/:ip', (req, res) => {
+  const asnInfo = threatIntel.findASNForIP(req.params.ip);
+  if (asnInfo) {
+    res.json({ ip: req.params.ip, ...asnInfo });
+  } else {
+    res.status(404).json({ error: 'ASN data not found for IP', ip: req.params.ip });
+  }
+});
+
+router.get('/country/lookup/:ip', (req, res) => {
+  const countryInfo = threatIntel.getCountryForIP(req.params.ip);
+  res.json({
+    ip: req.params.ip,
+    ...countryInfo,
+    timestamp: new Date().toISOString()
+  });
+});
+
+router.get('/internal/check/:ip', (req, res) => {
+  const ip = req.params.ip;
+  const isInternal = threatIntel.isInternalIP(ip);
+  const isCritical = threatIntel.isCriticalSystem(ip, '');
+  const countryInfo = threatIntel.getCountryForIP(ip);
+  
+  res.json({
+    ip,
+    is_internal: isInternal,
+    is_critical_system: isCritical,
+    country: countryInfo.country,
+    country_code: countryInfo.country_code,
+    network_type: countryInfo.network_type || 'unknown',
+    recommendations: isCritical ? [
+      'Monitor access to this critical system',
+      'Review authentication logs',
+      'Ensure proper segmentation'
+    ] : []
+  });
+});
+
+router.get('/asn/stats', (req, res) => {
+  res.json({
+    ipv4_records: threatIntel.asnDatabaseV4.size,
+    ipv6_records: threatIntel.asnDatabaseV6.size,
+    top_organizations: Array.from(threatIntel.asnDatabaseV4.values())
+      .slice(0, 10)
+      .map(entry => entry.organization)
+  });
+});
+
+router.post('/reload-blacklist', (req, res) => {
+  const result = threatIntel.reloadBlacklist();
+  res.json({
+    message: 'Blacklist reloaded',
+    ip_count: result.count,
+    timestamp: new Date().toISOString()
+  });
+});
+
+router.get('/blacklist', (req, res) => {
+  res.json({
+    ips: threatIntel.knownThreats.malicious_ips,
+    count: threatIntel.knownThreats.malicious_ips.length,
+    loaded_from: 'file'
+  });
+});
+
+router.get('/internal/patterns', (req, res) => {
+  res.json({
+    suspicious_patterns: threatIntel.knownThreats.suspicious_internal_patterns,
+    critical_systems: threatIntel.knownThreats.critical_internal_systems,
+    count: {
+      patterns: threatIntel.knownThreats.suspicious_internal_patterns.length,
+      systems: threatIntel.knownThreats.critical_internal_systems.length
     }
   });
 });
 
-router.get('/health/extended', async (req, res) => {
-  try {
-    const healthInfo = {
-      status: 'healthy',
-      has_openai: !!process.env.OPENAI_API_KEY,
-      has_otx: !!process.env.OTX_API_KEY,
-      services: {}
-    };
-
-    if (process.env.OTX_API_KEY) {
-      try {
-        const otxTest = await axios.get('https://otx.alienvault.com/api/v1/user/me', {
-          headers: { 'X-OTX-API-KEY': process.env.OTX_API_KEY },
-          timeout: 5000
-        });
-        healthInfo.services.otx = otxTest.status === 200 ? 'connected' : 'failed';
-      } catch (error) {
-        healthInfo.services.otx = 'disconnected';
-      }
-    }
-
-    try {
-      const geoipTest = await axios.get('https://ipapi.co/8.8.8.8/json/', {
-        timeout: 5000
-      });
-      healthInfo.services.geoip = geoipTest.status === 200 ? 'connected' : 'failed';
-    } catch (error) {
-      healthInfo.services.geoip = 'disconnected';
-    }
-
-    healthInfo.cache_stats = {
-      otx: threatIntel.otxCache.size,
-      geoip: threatIntel.geoipCache.size
-    };
-
-    res.json(healthInfo);
-  } catch (error) {
-    res.status(500).json({
-      status: 'degraded',
-      error: error.message
-    });
-  }
+// Test endpoint for internal threat detection
+router.post('/test/internal-threat', (req, res) => {
+  const testAlert = {
+    'Event Type': 'Internal Threat Test',
+    'srcip': '192.168.1.100',
+    'dstip': '192.168.1.1',
+    'dstport': 445,
+    'sentbyte': 15000000
+  };
+  
+  const iocs = threatIntel.extractIOCs(testAlert);
+  const internalAnalysis = threatIntel.analyzeInternalThreats(testAlert, iocs, {});
+  
+  res.json({
+    test: 'Internal Threat Detection Test',
+    alert: testAlert,
+    analysis: internalAnalysis,
+    verdict: internalAnalysis.has_internal_threats ? 'INTERNAL THREATS DETECTED' : 'No internal threats'
+  });
 });
 
 module.exports = router;
+module.exports.ThreatIntelAI = ThreatIntelAI;

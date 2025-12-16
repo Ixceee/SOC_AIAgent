@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SOC Alert Analysis Dashboard</title>
+    <title>SOC AI Agent - FortiSIEM Analysis Dashboard</title>
     <style>
         :root {
             --primary: #0d6efd;
@@ -52,6 +52,47 @@
             margin-bottom: 10px;
         }
         
+        .subtitle {
+            color: var(--secondary);
+            margin-bottom: 20px;
+        }
+        
+        .service-status {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin: 15px 0;
+            flex-wrap: wrap;
+        }
+        
+        .status-badge {
+            display: inline-block;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 0.9em;
+        }
+        
+        .offline {
+            background-color: var(--danger);
+            color: white;
+        }
+        
+        .online {
+            background-color: var(--success);
+            color: white;
+        }
+        
+        .checking {
+            background-color: var(--warning);
+            color: var(--dark);
+        }
+        
+        .other {
+            background-color: var(--secondary);
+            color: white;
+        }
+        
         .tabs {
             display: flex;
             margin-bottom: 20px;
@@ -75,24 +116,6 @@
         
         .tab:hover:not(.active) {
             background-color: #3a3f46;
-        }
-        
-        .ollama-status {
-            display: inline-block;
-            padding: 8px 16px;
-            border-radius: 20px;
-            font-weight: bold;
-            margin: 15px 0;
-        }
-        
-        .offline {
-            background-color: var(--danger);
-            color: white;
-        }
-        
-        .online {
-            background-color: var(--success);
-            color: white;
         }
         
         .dashboard {
@@ -125,10 +148,6 @@
         h3 {
             color: var(--info);
             margin: 15px 0;
-        }
-        
-        .alert-type {
-            margin-bottom: 20px;
         }
         
         select, textarea, button, input {
@@ -175,81 +194,9 @@
             background-color: var(--danger);
         }
         
-        .sample-alerts {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
-            margin-top: 20px;
-        }
-        
-        .sample-alert {
-            padding: 12px;
-            background-color: #2d3035;
-            border-radius: 5px;
-            text-align: center;
-            cursor: pointer;
-            transition: background-color 0.3s;
-        }
-        
-        .sample-alert:hover {
-            background-color: #3a3f46;
-        }
-        
-        .severity-badges {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            margin: 20px 0;
-        }
-        
-        .severity-badge {
-            padding: 8px 16px;
-            border-radius: 20px;
-            font-weight: bold;
-        }
-        
-        .critical {
-            background-color: var(--danger);
-        }
-        
-        .high {
-            background-color: #fd7e14;
-        }
-        
-        .medium {
-            background-color: var(--warning);
+        .btn-info {
+            background-color: var(--info);
             color: var(--dark);
-        }
-        
-        .low {
-            background-color: var(--secondary);
-        }
-        
-        .activity-log {
-            background-color: #2d3035;
-            border-radius: 5px;
-            padding: 15px;
-            margin-top: 15px;
-            max-height: 200px;
-            overflow-y: auto;
-            font-family: monospace;
-        }
-        
-        .log-entry {
-            margin-bottom: 10px;
-            padding-bottom: 10px;
-            border-bottom: 1px solid #3a3f46;
-            font-family: monospace;
-        }
-        
-        .log-entry:last-child {
-            border-bottom: none;
-        }
-        
-        .analysis-placeholder {
-            text-align: center;
-            padding: 40px 0;
-            color: var(--secondary);
         }
         
         .file-upload {
@@ -289,6 +236,33 @@
             color: var(--secondary);
         }
         
+        .activity-log {
+            background-color: #2d3035;
+            border-radius: 5px;
+            padding: 15px;
+            margin-top: 15px;
+            max-height: 200px;
+            overflow-y: auto;
+            font-family: monospace;
+        }
+        
+        .log-entry {
+            margin-bottom: 10px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #3a3f46;
+            font-family: monospace;
+        }
+        
+        .log-entry:last-child {
+            border-bottom: none;
+        }
+        
+        .analysis-placeholder {
+            text-align: center;
+            padding: 40px 0;
+            color: var(--secondary);
+        }
+        
         .analysis-section {
             margin-bottom: 20px;
         }
@@ -305,17 +279,6 @@
         
         .recommended-actions li {
             margin-bottom: 8px;
-        }
-        
-        .json-preview {
-            background-color: #2d3035;
-            border-radius: 5px;
-            padding: 15px;
-            margin: 15px 0;
-            max-height: 200px;
-            overflow-y: auto;
-            font-family: monospace;
-            font-size: 12px;
         }
         
         .stats {
@@ -369,44 +332,70 @@
             display: block;
         }
         
-        .json-key {
+        .processing-status {
+            background-color: #2d3035;
+            border-radius: 5px;
+            padding: 15px;
+            margin: 15px 0;
+        }
+        
+        .processing-stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin: 10px 0;
+        }
+        
+        .processing-stat {
+            text-align: center;
+            padding: 10px;
+        }
+        
+        .processing-stat .value {
+            font-size: 18px;
+            font-weight: bold;
             color: var(--info);
         }
         
-        .json-string {
-            color: var(--success);
-        }
-        
-        .json-number {
-            color: var(--warning);
-        }
-        
-        .json-boolean {
-            color: var(--primary);
-        }
-        
-        .json-null {
-            color: var(--secondary);
-        }
-
-        .ioc-match {
-            color: var(--danger);
-            font-weight: bold;
-        }
-
-        .confidence-high {
-            color: var(--success);
-        }
-
-        .confidence-medium {
-            color: var(--warning);
-        }
-
-        .confidence-low {
+        .processing-stat .label {
+            font-size: 12px;
             color: var(--secondary);
         }
         
-        /* Dashboard Styles */
+        .fortisiem-controls {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin: 15px 0;
+        }
+        
+        .bulk-actions {
+            display: flex;
+            gap: 10px;
+            margin: 15px 0;
+        }
+        
+        .bulk-actions button {
+            flex: 1;
+        }
+        
+        .batch-controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .batch-controls button {
+            width: auto;
+            padding: 8px 15px;
+        }
+        
+        .empty-dashboard {
+            text-align: center;
+            padding: 40px;
+            color: var(--secondary);
+        }
+        
         .alerts-dashboard {
             display: block;
             margin-top: 20px;
@@ -469,6 +458,11 @@
             background-color: var(--secondary);
         }
         
+        .alert-severity.info {
+            background-color: var(--info);
+            color: var(--dark);
+        }
+        
         .alert-confidence {
             display: inline-block;
             padding: 4px 8px;
@@ -486,6 +480,99 @@
             padding: 6px 10px;
             font-size: 0.8em;
             width: auto;
+        }
+        
+        .dashboard-stats {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            margin: 20px 0;
+        }
+        
+        .dashboard-stat {
+            background-color: #2d3035;
+            border-radius: 5px;
+            padding: 15px;
+            text-align: center;
+        }
+        
+        .stat-icon {
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+        
+        .dashboard-controls {
+            display: flex;
+            gap: 10px;
+            margin: 15px 0;
+        }
+        
+        .dashboard-controls select,
+        .dashboard-controls input {
+            margin-bottom: 0;
+        }
+        
+        .severity-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.8em;
+            font-weight: bold;
+            margin-right: 5px;
+        }
+        
+        .severity-badge.critical {
+            background-color: var(--danger);
+        }
+        
+        .severity-badge.high {
+            background-color: #fd7e14;
+        }
+        
+        .severity-badge.medium {
+            background-color: var(--warning);
+            color: var(--dark);
+        }
+        
+        .severity-badge.low {
+            background-color: var(--secondary);
+        }
+        
+        .severity-badge.info {
+            background-color: var(--info);
+            color: var(--dark);
+        }
+        
+        .severity-badge.unknown {
+            background-color: #6c757d;
+            color: white;
+        }
+        
+        .confidence-high {
+            color: var(--success);
+        }
+
+        .confidence-medium {
+            color: var(--warning);
+        }
+
+        .confidence-low {
+            color: var(--secondary);
+        }
+        
+        .ioc-list {
+            margin-top: 8px;
+        }
+        
+        .ioc-item {
+            display: inline-block;
+            background-color: #3a3f46;
+            padding: 2px 6px;
+            border-radius: 4px;
+            margin-right: 5px;
+            margin-bottom: 5px;
+            font-size: 0.75em;
+            color: var(--danger);
         }
         
         .analysis-details {
@@ -512,97 +599,11 @@
             margin-bottom: 3px;
         }
         
-        .ioc-list {
-            margin-top: 8px;
-        }
-        
-        .ioc-item {
-            display: inline-block;
-            background-color: #3a3f46;
-            padding: 2px 6px;
-            border-radius: 4px;
-            margin-right: 5px;
-            margin-bottom: 5px;
-            font-size: 0.75em;
-            color: var(--danger);
-        }
-        
-        .dashboard-controls {
-            display: flex;
-            gap: 10px;
-            margin: 15px 0;
-        }
-        
-        .dashboard-controls select,
-        .dashboard-controls input {
-            margin-bottom: 0;
-        }
-        
-        .dashboard-stats {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 10px;
-            margin: 20px 0;
-        }
-        
-        .dashboard-stat {
-            background-color: #2d3035;
-            border-radius: 5px;
-            padding: 15px;
-            text-align: center;
-        }
-        
-        .stat-icon {
-            font-size: 24px;
-            margin-bottom: 10px;
-        }
-        
-        .dashboard-filters {
-            display: flex;
-            gap: 10px;
-            margin: 15px 0;
-            flex-wrap: wrap;
-        }
-        
-        .filter-pill {
-            background-color: #2d3035;
-            padding: 8px 16px;
-            border-radius: 20px;
-            cursor: pointer;
-            transition: background-color 0.3s;
-        }
-        
-        .filter-pill.active {
-            background-color: var(--primary);
-        }
-        
-        .filter-pill:hover {
-            background-color: #3a3f46;
-        }
-        
-        .empty-dashboard {
-            text-align: center;
-            padding: 40px;
-            color: var(--secondary);
-        }
-
-        .batch-controls {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 15px;
-        }
-        
-        .batch-controls button {
-            width: auto;
-            padding: 8px 15px;
-        }
-        
         .timestamp {
             font-size: 0.85em;
             color: var(--secondary);
         }
         
-        /* Error styling */
         .error-status {
             background-color: var(--danger);
             color: white;
@@ -627,55 +628,534 @@
             background-color: #e0a800;
         }
         
-        .analysis-warning {
-            background-color: #664d03;
-            color: #ffda6a;
-            padding: 10px;
-            border-radius: 5px;
-            margin: 10px 0;
-            border-left: 4px solid var(--warning);
-        }
-        
-        .severity-badge.unknown {
-            background-color: #6c757d;
+        .threat-intel-badge {
+            background-color: #6f42c1;
             color: white;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.7em;
+            margin-left: 5px;
+        }
+
+        /* Enhanced Popup Styles */
+        .popup-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            padding: 20px;
+        }
+
+        .popup-content {
+            background: var(--card-dark);
+            border-radius: 10px;
+            padding: 30px;
+            max-width: 800px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            border: 1px solid #3a3f46;
+        }
+
+        .popup-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #3a3f46;
+            padding-bottom: 15px;
+        }
+
+        .popup-section {
+            margin-bottom: 25px;
+        }
+
+        .popup-section h3 {
+            color: var(--info);
+            margin-bottom: 10px;
+        }
+
+        .popup-data-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            background: #2d3035;
+            padding: 15px;
+            border-radius: 5px;
+        }
+
+        .popup-actions {
+            margin-top: 25px;
+            text-align: center;
+            border-top: 1px solid #3a3f46;
+            padding-top: 15px;
+        }
+
+        /* Enhanced button styles for popup */
+        .enhanced-btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            margin: 0 5px;
+            transition: all 0.3s ease;
+        }
+
+        .enhanced-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        }
+
+        .enhanced-btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+
+        .enhanced-btn-success {
+            background: var(--success);
+            color: white;
+        }
+
+        .enhanced-btn-info {
+            background: var(--info);
+            color: var(--dark);
+        }
+
+        .enhanced-btn-danger {
+            background: var(--danger);
+            color: white;
+        }
+
+        .alert-id {
+            font-family: monospace;
+            background: #2d3035;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.8em;
+            color: var(--info);
+        }
+
+        .processing-optimized {
+            background: linear-gradient(90deg, var(--primary) 0%, var(--info) 50%, var(--success) 100%);
+            background-size: 200% 100%;
+            animation: shimmer 2s infinite;
+        }
+
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+
+        /* Severity Justification Styles */
+        .severity-justification {
+            background: #2d3035;
+            border-radius: 5px;
+            padding: 15px;
+            margin-top: 10px;
+            border-left: 4px solid var(--info);
+        }
+
+        .justification-title {
+            font-weight: bold;
+            color: var(--info);
+            margin-bottom: 8px;
+        }
+
+        .justification-reasons {
+            padding-left: 20px;
+        }
+
+        .justification-reason {
+            margin-bottom: 5px;
+            display: flex;
+            align-items: flex-start;
+        }
+
+        .justification-reason:before {
+            content: "•";
+            color: var(--info);
+            font-weight: bold;
+            margin-right: 8px;
+        }
+
+        .confidence-factors {
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid #3a3f46;
+        }
+
+        .confidence-factor {
+            display: inline-block;
+            background: #3a3f46;
+            padding: 3px 8px;
+            border-radius: 12px;
+            margin-right: 5px;
+            margin-bottom: 5px;
+            font-size: 0.75em;
+        }
+
+        .severity-breakdown {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .breakdown-item {
+            background: #3a3f46;
+            padding: 8px;
+            border-radius: 4px;
+            font-size: 0.85em;
+        }
+
+        .breakdown-label {
+            font-weight: bold;
+            color: var(--info);
+        }
+
+        .justification-btn {
+            background: var(--info);
+            color: var(--dark);
+            border: none;
+            border-radius: 4px;
+            padding: 4px 8px;
+            font-size: 0.75em;
+            cursor: pointer;
+            margin-left: 8px;
+        }
+
+        .justification-btn:hover {
+            background: #0dcaf0;
+        }
+
+        /* Pagination Styles */
+        .pagination-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 20px 0;
+            padding: 15px;
+            background: #2d3035;
+            border-radius: 8px;
+        }
+
+        .pagination-info {
+            color: var(--secondary);
+            font-size: 0.9em;
+        }
+
+        .pagination-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .pagination-btn {
+            padding: 8px 16px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background-color 0.3s;
+        }
+
+        .pagination-btn:hover:not(:disabled) {
+            background: #0b5ed7;
+        }
+
+        .pagination-btn:disabled {
+            background: #3a3f46;
+            color: #6c757d;
+            cursor: not-allowed;
+        }
+
+        .page-size-selector {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .page-size-selector select {
+            width: auto;
+            margin-bottom: 0;
+        }
+
+        /* IP Address Styles */
+        .ip-address {
+            font-family: monospace;
+            background: #2d3035;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.85em;
+            color: var(--info);
+        }
+
+        .ip-source {
+            border-left: 3px solid var(--primary);
+        }
+
+        .ip-destination {
+            border-left: 3px solid var(--warning);
+        }
+
+        .ip-container {
+            display: flex;
+            gap: 10px;
+            margin: 5px 0;
+        }
+
+        .ip-pair {
+            display: grid;
+            grid-template-columns: auto 1fr;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .ip-label {
+            font-size: 0.8em;
+            color: var(--secondary);
+            font-weight: bold;
+        }
+
+        /* MAC Address Badge */
+        .mac-badge {
+            background-color: #6f42c1;
+            color: white;
+            padding: 1px 4px;
+            border-radius: 8px;
+            font-size: 0.6em;
+            margin-left: 4px;
+            font-weight: bold;
+        }
+
+        .mac-address {
+            font-family: monospace;
+            background: #2d3035;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.85em;
+            color: #e83e8c;
+            border-left: 3px solid #e83e8c;
+        }
+
+        /* Country Badge Styles */
+        .country-badge {
+            display: inline-block;
+            margin-left: 8px;
+            padding: 2px 6px;
+            background: #e3f2fd;
+            border: 1px solid #90caf9;
+            border-radius: 4px;
+            font-size: 0.8em;
+            font-weight: bold;
+            color: #1976d2;
+        }
+
+        .country-badge.unknown {
+            background: #f5f5f5;
+            border-color: #ddd;
+            color: #666;
+        }
+
+        .country-flag {
+            margin: 0 5px;
+            font-size: 1em;
+        }
+
+        .geo-info {
+            margin-top: 8px;
+            padding: 6px;
+            background: #f8f9fa;
+            border-radius: 4px;
+            font-size: 0.9em;
+            color: #333;
+        }
+
+        .eu-flag {
+            color: #003399;
+            margin-left: 5px;
+        }
+
+        .country-info-section {
+            background: #2d3035;
+            border-radius: 5px;
+            padding: 10px;
+            margin-top: 10px;
+        }
+
+        .country-details {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 8px;
+        }
+
+        .country-detail {
+            font-size: 0.85em;
+        }
+
+        .country-detail .label {
+            font-weight: bold;
+            color: var(--info);
         }
     </style>
 </head>
 <body>
     <div class="container">
         <header>
-            <h1>SOC Alert Analysis Dashboard</h1>
-            <p>Monitor and analyze security alerts in a comprehensive dashboard view</p>
-            <div class="ollama-status offline" id="ollama-status">Backend Offline</div>
+            <h1>SOC AI Agent - FortiSIEM Analysis Dashboard</h1>
+            <p class="subtitle">Analyze 100,000+ FortiSIEM logs with specialized AI agents</p>
+            <div class="service-status">
+                <div class="status-badge online" id="backend-status">Backend: Checking...</div>
+                <div class="status-badge checking" id="offense-status">AI Agents: Checking...</div>
+                <div class="status-badge checking" id="redis-status">Universal Parser: Checking...</div>
+            </div>
         </header>
         
         <div class="tabs">
-            <div class="tab active" data-tab="soc-tester">SOC Alert Tester</div>
+            <div class="tab active" data-tab="fortisiem-upload">FortiSIEM Upload</div>
+            <div class="tab" data-tab="soc-tester">Single Alert Tester</div>
             <div class="tab" data-tab="dashboard">Alert Dashboard</div>
             <div class="tab" data-tab="analysis-results">Analysis Results</div>
         </div>
         
-        <!-- SOC Alert Tester Tab -->
-        <div class="tab-content active" id="soc-tester">
+        <!-- FortiSIEM Upload Tab -->
+        <div class="tab-content active" id="fortisiem-upload">
             <div class="dashboard">
                 <div class="card">
-                    <h2>Alert Submission</h2>
+                    <h2>FortiSIEM Log Upload</h2>
+                    
+                    <div class="processing-status">
+                        <h3>Upload & Processing Status</h3>
+                        <div class="processing-stats">
+                            <div class="processing-stat">
+                                <div class="value" id="total-logs">0</div>
+                                <div class="label">Total Logs</div>
+                            </div>
+                            <div class="processing-stat">
+                                <div class="value" id="processed-logs">0</div>
+                                <div class="label">Processed</div>
+                            </div>
+                            <div class="processing-stat">
+                                <div class="value" id="remaining-logs">0</div>
+                                <div class="label">Remaining</div>
+                            </div>
+                        </div>
+                        <div class="progress">
+                            <div class="progress-bar" id="processing-progress" style="width: 0%">0%</div>
+                        </div>
+                    </div>
+                    
+                    <div class="file-upload" id="fortisiem-file-upload">
+                        <p>📁 Click to upload FortiSIEM logs.json or drag & drop file</p>
+                        <p class="timestamp">Supports files with 100,000+ logs</p>
+                        <input type="file" id="fortisiem-file-input" accept=".json" style="display: none;">
+                    </div>
+                    
+                    <div class="fortisiem-controls">
+                        <div>
+                            <label for="batch-size">Batch Size:</label>
+                            <select id="batch-size">
+                                <option value="50">50 logs per batch</option>
+                                <option value="100" selected>100 logs per batch</option>
+                                <option value="250">250 logs per batch</option>
+                                <option value="500">500 logs per batch</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="analysis-type">Analysis Type:</label>
+                            <select id="analysis-type">
+                                <option value="auto">Auto-detect (Recommended)</option>
+                                <option value="threat-intel">Threat Intelligence Only</option>
+                                <option value="app">APP AI (WiFi/Application)</option>
+                                <option value="endpoint">ENDPOINT AI (Process)</option>
+                                <option value="network">NETWORK AI (Traffic)</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="bulk-actions">
+                        <button id="start-processing" class="btn-success">Start Processing</button>
+                        <button id="pause-processing" class="btn-warning" disabled>Pause</button>
+                        <button id="stop-processing" class="btn-danger" disabled>Stop</button>
+                        <button onclick="clearAllStorage()" class="btn-danger" title="Clear all stored data">Clear Storage</button>
+                    </div>
+                    
+                    <div class="batch-controls">
+                        <button id="analyze-sample" class="btn-info">Analyze Sample (100 logs)</button>
+                        <button id="clear-fortisiem" class="btn-danger">Clear All</button>
+                        <button onclick="debugBulkProcessing()" class="btn-info">Debug Bulk Processing</button>
+                    </div>
+                    
+                    <h3>Uploaded Logs Preview</h3>
+                    <div id="fortisiem-log-preview" class="alert-list">
+                        <div class="empty-dashboard">
+                            <p>No FortiSIEM logs uploaded yet</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <h2>Processing Results</h2>
+                    
+                    <div class="processing-stats">
+                        <div class="processing-stat">
+                            <div class="value" id="critical-found">0</div>
+                            <div class="label">Critical</div>
+                        </div>
+                        <div class="processing-stat">
+                            <div class="value" id="high-found">0</div>
+                            <div class="label">High</div>
+                        </div>
+                        <div class="processing-stat">
+                            <div class="value" id="medium-found">0</div>
+                            <div class="label">Medium</div>
+                        </div>
+                    </div>
+                    
+                    <div class="activity-log" id="fortisiem-activity-log">
+                        <div class="log-entry">Ready to process FortiSIEM logs...</div>
+                    </div>
+                    
+                    <div class="bulk-actions">
+                        <button id="export-results" class="btn-success" disabled>Export Results</button>
+                        <button id="view-dashboard" class="btn-info">View Dashboard</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- SOC Alert Tester Tab -->
+        <div class="tab-content" id="soc-tester">
+            <div class="dashboard">
+                <div class="card">
+                    <h2>Single Alert Testing</h2>
                     
                     <div class="alert-type">
                         <label for="alert-type">Alert Type:</label>
                         <select id="alert-type">
-                            <option selected>Endpoint Alert</option>
-                            <option>Network Alert</option>
-                            <option>Cloud Alert</option>
-                            <option>Application Alert</option>
+                            <option value="auto">Auto-detect</option>
+                            <option value="endpoint">Endpoint Alert</option>
+                            <option value="network">Network Alert</option>
+                            <option value="app">Application Alert</option>
+                            <option value="threat-intel">Threat Intelligence</option>
                         </select>
                     </div>
                     
                     <label for="alert-data">Alert Data (JSON):</label>
                     <textarea id="alert-data">{
     "Event Receive Time": "2025-06-19 17:34:21",
-    "Reporting IP": "172.20.0.1",
+    "srcip": "192.168.1.100",
+    "dstip": "8.8.8.8",
     "Event Type": "FortiGate-event-wireless-rogue-detect-chg",
     "Event Name": "Rogue AP change detected",
     "Raw Event Log": "<13>date=2025-06-19 time=17:34:21 devname=\"EvvoTevvo\" devid=\"FG101FTK20008934\" eventtime=1750325660662446628 tz=\"+0800\" logid=\"0104043571\" type=\"event\" subtype=\"wireless\" level=\"notice\" vd=\"root\" logdesc=\"Rogue AP change detected\" ssid=\"Evvo-Staff\" bssid=\"78:45:58:83:21:3a\" aptype=0 rate=288 radioband=\"11NGHT20\" channel=6 action=\"rogue-ap-changed\" manuf=\"Ubiquiti\" security=\"WPA2 Personal\" encryption=\"AES\" signal=-53 noise=-95 live=8144911 age=0 onwire=\"no\" detectionmethod=\"N/A\" stamac=\"78:45:58:83:21:39\" apscan=\"N/A\" sndetected=\"FP231FTF20009114\" radioiddetected=2 stacount=0 snclosest=\"FP231FTF20009114\" radioidclosest=2 apstatus=0 msg=\"AP Evvo-Staff 78:45:58:83:21:3a chan 6 live 8144911\""
@@ -689,21 +1169,8 @@
                         <input type="file" id="file-input-soc" accept=".json" style="display: none;">
                     </div>
                     
-                    <div class="batch-controls">
-                        <button id="analyze-all-btn" class="btn-warning">Analyze All Uploaded</button>
-                        <button id="clear-all-btn" class="btn-danger">Clear All</button>
-                    </div>
-                    
                     <div id="alert-list" class="alert-list">
                         <!-- Alert items will be loaded here -->
-                    </div>
-                    
-                    <h3>Sample Alerts</h3>
-                    <div class="sample-alerts">
-                        <div class="sample-alert" data-sample="bruteforce">Brute Force</div>
-                        <div class="sample-alert" data-sample="malware">Malware</div>
-                        <div class="sample-alert" data-sample="rogue">Rogue AP</div>
-                        <div class="sample-alert" data-sample="vpn">VPN Issue</div>
                     </div>
                 </div>
                 
@@ -722,9 +1189,37 @@
                         </div>
                         
                         <div class="analysis-section">
-                            <h3>Severity Level</h3>
+                            <h3>AI Agent Used</h3>
+                            <div id="ai-agent-used" class="status-badge">Auto-detected</div>
+                        </div>
+                        
+                        <div class="analysis-section">
+                            <h3>Network Information</h3>
+                            <div class="ip-container">
+                                <div class="ip-pair">
+                                    <span class="ip-label">Source:</span>
+                                    <span class="ip-address ip-source" id="source-ip-display">Unknown</span>
+                                    <span id="source-country-badge" class="country-badge" style="display: none;"></span>
+                                </div>
+                                <div class="ip-pair">
+                                    <span class="ip-label">Destination:</span>
+                                    <span class="ip-address ip-destination" id="destination-ip-display">Unknown</span>
+                                    <span id="destination-country-badge" class="country-badge" style="display: none;"></span>
+                                </div>
+                            </div>
+                            <div id="country-info-section" class="country-info-section" style="display: none;">
+                                <!-- Country details will be populated here -->
+                            </div>
+                        </div>
+                        
+                        <div class="analysis-section">
+                            <h3>Severity Level <span class="threat-intel-badge">ThreatIntelAI</span></h3>
                             <div class="severity-badges" id="severity-badges">
-                                <div class="severity-badge medium">Medium</div>
+                                <div class="severity-badge unknown">Unknown</div>
+                            </div>
+                            <button class="justification-btn" id="show-justification-btn">View Justification</button>
+                            <div class="severity-justification" id="severity-justification" style="display: none;">
+                                <!-- Justification content will be populated here -->
                             </div>
                         </div>
                         
@@ -739,20 +1234,9 @@
                         </div>
                         
                         <div class="analysis-section">
-                            <h3>Threat Intelligence Analysis</h3>
-                            <div id="ollama-analysis" class="activity-log">
-                                <div class="log-entry">Backend offline - using simulated analysis</div>
-                                <div class="log-entry">Alert type: unknown</div>
-                                <div class="log-entry">Event: unknown</div>
-                                <div class="log-entry">Source IP: unknown</div>
-                                <div class="log-entry">Confidence: 85%</div>
-                            </div>
-                        </div>
-                        
-                        <div class="analysis-section">
-                            <h3>Parsed Alert Data</h3>
-                            <div id="parsed-alert" class="json-preview">
-                                {/* Parsed JSON will appear here */}
+                            <h3>AI Analysis Results</h3>
+                            <div id="ai-analysis" class="activity-log">
+                                <div class="log-entry">No analysis performed yet</div>
                             </div>
                         </div>
                     </div>
@@ -761,10 +1245,8 @@
             
             <div class="card">
                 <h2>Activity Log</h2>
-                
                 <div class="activity-log" id="activity-log">
-                    <div class="log-entry">[9:20:20 am] Loaded bruteforce sample</div>
-                    <div class="log-entry">[9:20:22 am] Submitting endpoint alert for analysis ...</div>
+                    <div class="log-entry">System ready for alert analysis</div>
                 </div>
             </div>
         </div>
@@ -797,14 +1279,6 @@
                     </div>
                 </div>
                 
-                <div class="dashboard-filters">
-                    <div class="filter-pill active" data-filter="all">All Alerts</div>
-                    <div class="filter-pill" data-filter="critical">Critical</div>
-                    <div class="filter-pill" data-filter="high">High</div>
-                    <div class="filter-pill" data-filter="medium">Medium</div>
-                    <div class="filter-pill" data-filter="low">Low</div>
-                </div>
-                
                 <div class="dashboard-controls">
                     <select id="sort-alerts">
                         <option value="newest">Newest First</option>
@@ -814,28 +1288,23 @@
                     <input type="text" id="search-dashboard" placeholder="Search alerts...">
                     <button id="refresh-dashboard">Refresh</button>
                     <button id="export-dashboard" class="btn-success">Export</button>
+                    <button id="debug-alerts" class="btn-info">Debug IPs</button>
+                    <button id="update-countries" class="btn-info">Update Countries</button>
                 </div>
-                
+
                 <div class="alerts-dashboard" id="alerts-dashboard">
                     <div class="empty-dashboard">
                         <h3>No alerts analyzed yet</h3>
-                        <p>Submit alerts in the SOC Alert Tester tab to see them displayed here</p>
+                        <p>Submit alerts to see them displayed here</p>
                     </div>
                 </div>
             </div>
         </div>
         
         <!-- Analysis Results Tab -->
-        <div class="tab-content" id="analysis-results-tab">
+        <div class="tab-content" id="analysis-results">
             <div class="card">
-                <h2>Analysis History</h2>
-                <div id="analysis-history" class="activity-log">
-                    <div class="log-entry">No analysis history yet. Submit alerts to see results here.</div>
-                </div>
-            </div>
-            
-            <div class="card">
-                <h2>Threat Statistics</h2>
+                <h2>Analysis Statistics</h2>
                 <div class="stats">
                     <div class="stat-box">
                         <div class="stat-value" id="total-analyses">0</div>
@@ -851,925 +1320,1456 @@
                     </div>
                 </div>
                 
-                <h3>Threat Type Distribution</h3>
-                <div id="threat-chart" style="height: 200px; background-color: #2d3035; border-radius: 5px; padding: 15px; margin: 15px 0;">
-                    <p>No threat data available yet. Submit alerts to see statistics.</p>
+                <h3>AI Agent Usage</h3>
+                <div id="agent-usage-chart" style="height: 200px; background-color: #2d3035; border-radius: 5px; padding: 15px; margin: 15px 0;">
+                    <p>No agent usage data available yet</p>
+                </div>
+            </div>
+            
+            <div class="card">
+                <h2>Recent Analysis History</h2>
+                <div id="analysis-history" class="activity-log">
+                    <div class="log-entry">No analysis history yet. Submit alerts to see results here.</div>
                 </div>
             </div>
         </div>
     </div>
 
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // Constants
-            const API_BASE_URL = 'http://localhost:11435';
-            
-            // Tab functionality
-            const tabs = document.querySelectorAll('.tab');
-            const tabContents = document.querySelectorAll('.tab-content');
-            
-            tabs.forEach(tab => {
-                tab.addEventListener('click', () => {
-                    const tabId = tab.getAttribute('data-tab');
-                    
-                    // Update active tab
-                    tabs.forEach(t => t.classList.remove('active'));
-                    tab.classList.add('active');
-                    
-                    // Show correct content
-                    tabContents.forEach(content => {
-                        content.classList.remove('active');
-                        if (content.id === tabId) {
-                            content.classList.add('active');
-                        }
-                    });
-                });
-            });
-            
-            // SOC Alert Tester functionality
-            const submitButton = document.getElementById('submit-alert');
-            const fileUploadSoc = document.getElementById('file-upload-soc');
-            const fileInputSoc = document.getElementById('file-input-soc');
-            const alertList = document.getElementById('alert-list');
-            const sampleAlerts = document.querySelectorAll('.sample-alert');
-            const activityLog = document.getElementById('activity-log');
-            const resultsPlaceholder = document.getElementById('results-placeholder');
-            const analysisResults = document.getElementById('analysis-results');
-            const threatAssessment = document.getElementById('threat-assessment');
-            const severityBadges = document.getElementById('severity-badges');
-            const recommendedActions = document.getElementById('recommended-actions');
-            const ollamaAnalysis = document.getElementById('ollama-analysis');
-            const parsedAlert = document.getElementById('parsed-alert');
-            const analyzeAllBtn = document.getElementById('analyze-all-btn');
-            const clearAllBtn = document.getElementById('clear-all-btn');
-            const exportDashboardBtn = document.getElementById('export-dashboard');
-            
-            // Dashboard functionality
-            const alertsDashboard = document.getElementById('alerts-dashboard');
-            const totalAlertsDash = document.getElementById('total-alerts-dash');
-            const criticalAlerts = document.getElementById('critical-alerts');
-            const highAlerts = document.getElementById('high-alerts');
-            const resolvedAlerts = document.getElementById('resolved-alerts');
-            const filterPills = document.querySelectorAll('.filter-pill');
-            const sortAlerts = document.getElementById('sort-alerts');
-            const searchDashboard = document.getElementById('search-dashboard');
-            const refreshDashboard = document.getElementById('refresh-dashboard');
-            
-            // Analysis Results functionality
-            const analysisHistory = document.getElementById('analysis-history');
-            const totalAnalyses = document.getElementById('total-analyses');
-            const criticalThreats = document.getElementById('critical-threats');
-            const highThreats = document.getElementById('high-threats');
-            
-            let parsedData = [];
-            let allKeys = new Set();
-            let analysisHistoryData = [];
-            let dashboardAlerts = [];
-            let uploadedAlerts = [];
-            
-            // Sample alert data
-            const sampleData = {
-                bruteforce: `{
-    "type": "endpoint",
-    "event": "auth-failed",
-    "user": "admin",
-    "count": 23,
-    "srcip": "192.168.1.15",
-    "severity": 8,
-    "timestamp": "2025-08-27T01:19:45.4972"
-}`,
-                malware: `{
-    "type": "endpoint",
-    "event": "malware-detected",
-    "file": "cryptolocker.exe",
-    "path": "C:/Users/Public/temp",
-    "action": "quarantined",
-    "severity": 9,
-    "timestamp": "2025-08-27T01:22:18.3421"
-}`,
-                rogue: `{
-    "type": "network",
-    "event": "rogue-ap-detected",
-    "ssid": "Free Public WiFi",
-    "bssid": "AA:BB:CC:DD:EE:FF",
-    "channel": 6,
-    "severity": 7,
-    "timestamp": "2025-08-27T01:25:33.1289"
-}`,
-                vpn: `{
-    "type": "network",
-    "event": "vpn-connection-failed",
-    "user": "jdoe",
-    "reason": "authentication-error",
-    "count": 5,
-    "severity": 4,
-    "timestamp": "2025-08-27T01:28:47.5612"
-}`
-            };
+// Global state variables
+let fortisiemLogs = [];
+let processedAlerts = [];
+let currentProcessingState = {
+    isProcessing: false,
+    isPaused: false,
+    currentBatch: 0,
+    totalBatches: 0,
+    processedCount: 0
+};
+let alertCounter = 1;
 
-            // Fetch with retry logic for rate limiting
-            async function fetchWithRetry(url, options, retries = 3) {
-                try {
-                    const response = await fetch(url, options);
-                    if (response.status === 429 && retries > 0) {
-                        console.log(`Rate limited, retrying in 2 seconds... (${retries} retries left)`);
-                        await new Promise(resolve => setTimeout(resolve, 2000));
-                        return fetchWithRetry(url, options, retries - 1);
-                    }
-                    return response;
-                } catch (error) {
-                    if (retries > 0) {
-                        await new Promise(resolve => setTimeout(resolve, 2000));
-                        return fetchWithRetry(url, options, retries - 1);
-                    }
-                    throw error;
-                }
-            }
-            
-            // Check backend status
-            async function checkBackendStatus() {
-                try {
-                    const response = await fetch(`${API_BASE_URL}/api/health-simple`);
-                    if (response.ok) {
-                        document.getElementById('ollama-status').textContent = 'Backend Online';
-                        document.getElementById('ollama-status').className = 'ollama-status online';
-                    } else {
-                        throw new Error('Backend not healthy');
-                    }
-                } catch (error) {
-                    document.getElementById('ollama-status').textContent = 'Backend Offline';
-                    document.getElementById('ollama-status').className = 'ollama-status offline';
-                }
-            }
-            
-            // File upload handling for SOC Tester
-            fileUploadSoc.addEventListener('click', () => {
-                fileInputSoc.click();
-            });
-            
-            fileInputSoc.addEventListener('change', (event) => {
-                const file = event.target.files[0];
-                if (file) {
-                    const reader = new FileReader();
-                    reader.onload = (e) => {
-                        try {
-                            const logs = JSON.parse(e.target.result);
-                            loadAlertsFromFile(logs);
-                            addLogEntry(`Loaded ${Array.isArray(logs) ? logs.length : 1} alerts from ${file.name}`);
-                        } catch (error) {
-                            addLogEntry(`Error parsing JSON file: ${error.message}`);
-                            alert('Failed to parse JSON file. Please check the format.');
-                        }
-                    };
-                    reader.readAsText(file);
-                }
-            });
-            
-            // Sample alert click handler
-            sampleAlerts.forEach(sample => {
-                sample.addEventListener('click', () => {
-                    const sampleType = sample.getAttribute('data-sample');
-                    document.getElementById('alert-data').value = sampleData[sampleType];
-                    addLogEntry(`Loaded ${sampleType} sample`);
-                });
-            });
-            
-            // Submit alert handler
-            submitButton.addEventListener('click', async () => {
-                const alertData = document.getElementById('alert-data').value;
-                
-                try {
-                    const alertJson = JSON.parse(alertData);
-                    addLogEntry('Submitting alert for threat intelligence analysis ...');
-                    
-                    // Call the new analyzeAlert function
-                    await analyzeAlert(alertJson);
-                    
-                } catch (e) {
-                    addLogEntry('Error: Invalid JSON format in alert data');
-                    alert('Please check your JSON format');
-                }
-            });
-            
-            // Analyze all uploaded alerts
-            analyzeAllBtn.addEventListener('click', async () => {
-                if (uploadedAlerts.length === 0) {
-                    addLogEntry('No uploaded alerts to analyze');
-                    return;
-                }
-                
-                addLogEntry(`Analyzing ${uploadedAlerts.length} uploaded alerts...`);
-                analyzeAllBtn.textContent = 'Analyzing...';
-                analyzeAllBtn.disabled = true;
-                
-                // Process each alert sequentially
-                for (let i = 0; i < uploadedAlerts.length; i++) {
-                    try {
-                        await analyzeAlert(uploadedAlerts[i]);
-                        addLogEntry(`Analyzed alert ${i+1} of ${uploadedAlerts.length}`);
-                    } catch (error) {
-                        addLogEntry(`Error analyzing alert ${i+1}: ${error.message}`);
-                    }
-                    
-                    // Small delay to avoid overwhelming the backend
-                    await new Promise(resolve => setTimeout(resolve, 500));
-                }
-                
-                addLogEntry(`Completed analysis of ${uploadedAlerts.length} alerts`);
-                analyzeAllBtn.textContent = 'Analyze All Uploaded';
-                analyzeAllBtn.disabled = false;
-            });
-            
-            // Clear all alerts
-            clearAllBtn.addEventListener('click', () => {
-                uploadedAlerts = [];
-                alertList.innerHTML = '';
-                addLogEntry('Cleared all uploaded alerts');
-            });
-            
-            // Export dashboard data
-            exportDashboardBtn.addEventListener('click', () => {
-                if (dashboardAlerts.length === 0) {
-                    addLogEntry('No alerts to export');
-                    return;
-                }
-                
-                const dataStr = JSON.stringify(dashboardAlerts, null, 2);
-                const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
-                
-                const exportFileDefaultName = 'soc-alerts-export.json';
-                
-                const linkElement = document.createElement('a');
-                linkElement.setAttribute('href', dataUri);
-                linkElement.setAttribute('download', exportFileDefaultName);
-                linkElement.click();
-                
-                addLogEntry(`Exported ${dashboardAlerts.length} alerts`);
-            });
-            
-            // Dashboard filter handlers
-            filterPills.forEach(pill => {
-                pill.addEventListener('click', () => {
-                    const filter = pill.getAttribute('data-filter');
-                    
-                    // Update active filter
-                    filterPills.forEach(p => p.classList.remove('active'));
-                    pill.classList.add('active');
-                    
-                    // Update dashboard
-                    updateDashboard(filter);
-                });
-            });
-            
-            // Sort handler
-            sortAlerts.addEventListener('change', () => {
-                updateDashboard();
-            });
-            
-            // Search handler
-            searchDashboard.addEventListener('input', () => {
-                updateDashboard();
-            });
-            
-            // Refresh handler
-            refreshDashboard.addEventListener('click', () => {
-                updateDashboard();
-            });
-            
-            // Load alerts from JSON file for SOC Tester
-            function loadAlertsFromFile(logs) {
-                alertList.innerHTML = '';
-                
-                if (Array.isArray(logs)) {
-                    uploadedAlerts = [...logs];
-                    logs.forEach((log, index) => {
-                        const alertItem = document.createElement('div');
-                        alertItem.className = 'alert-item';
-                        alertItem.innerHTML = `
-                            <strong>Alert ${index + 1}</strong>
-                            <div class="alert-summary">${log.type || log['Event Type'] || 'Unknown'} - ${log.event || log['Event Name'] || 'Unknown'}</div>
-                        `;
-                        alertItem.addEventListener('click', () => {
-                            document.getElementById('alert-data').value = JSON.stringify(log, null, 2);
-                            addLogEntry(`Loaded alert ${index + 1} from file`);
-                        });
-                        alertList.appendChild(alertItem);
-                    });
-                } else {
-                    // Single alert object
-                    uploadedAlerts = [logs];
-                    const alertItem = document.createElement('div');
-                    alertItem.className = 'alert-item';
-                    alertItem.innerHTML = `
-                        <strong>Alert</strong>
-                        <div class="alert-summary">${logs.type || logs['Event Type'] || 'Unknown'} - ${logs.event || logs['Event Name'] || 'Unknown'}</div>
-                    `;
-                    alertItem.addEventListener('click', () => {
-                        document.getElementById('alert-data').value = JSON.stringify(logs, null, 2);
-                        addLogEntry('Loaded alert from file');
-                    });
-                    alertList.appendChild(alertItem);
-                }
-                
-                // Show the analyze all button
-                analyzeAllBtn.style.display = 'block';
-                clearAllBtn.style.display = 'block';
-            }
-            
-            // Analyze the alert using threat intelligence API
-            async function analyzeAlert(alert) {
-                resultsPlaceholder.style.display = 'none';
-                analysisResults.style.display = 'block';
-                
-                // Parse the alert if it contains raw log data
-                let parsedAlertData = alert;
-                if (alert['Raw Event Log']) {
-                    parsedAlertData = parseAlert(alert);
-                    parsedAlert.innerHTML = syntaxHighlight(JSON.stringify(parsedAlertData, null, 2));
-                }
-                
-                // Show loading state
-                threatAssessment.innerHTML = 'Analyzing with Threat Intelligence...';
-                severityBadges.innerHTML = '<div class="severity-badge medium">Analyzing...</div>';
-                recommendedActions.innerHTML = '<ul><li>Processing threat intelligence...</li></ul>';
-                ollamaAnalysis.innerHTML = '<div class="log-entry">Connecting to threat intelligence service...</div>';
+// Your SOC AI Backend URL
+const SOC_AI_BACKEND = 'http://localhost:11435';
 
-                try {
-                    // Determine the correct endpoint based on alert type
-                    let endpoint = '/api/threat-intel/analyze'; // default
-                    
-                    if (alert.type === 'endpoint' || alert['Event Type']?.includes('endpoint')) {
-                        endpoint = '/api/endpoint/analyze';
-                    } else if (alert.type === 'network' || alert['Event Type']?.includes('network')) {
-                        endpoint = '/api/network/analyze';
-                    } else if (alert.type === 'app' || alert['Event Type']?.includes('app')) {
-                        endpoint = '/api/app/analyze';
-                    }
+// DOM elements cache
+const elements = {
+    // Status elements
+    backendStatus: document.getElementById('backend-status'),
+    offenseStatus: document.getElementById('offense-status'),
+    redisStatus: document.getElementById('redis-status'),
+    
+    // FortiSIEM elements
+    fortisiemFileUpload: document.getElementById('fortisiem-file-upload'),
+    fortisiemFileInput: document.getElementById('fortisiem-file-input'),
+    startProcessing: document.getElementById('start-processing'),
+    pauseProcessing: document.getElementById('pause-processing'),
+    stopProcessing: document.getElementById('stop-processing'),
+    analyzeSample: document.getElementById('analyze-sample'),
+    clearFortisiem: document.getElementById('clear-fortisiem'),
+    exportResults: document.getElementById('export-results'),
+    viewDashboard: document.getElementById('view-dashboard'),
+    fortisiemLogPreview: document.getElementById('fortisiem-log-preview'),
+    fortisiemActivityLog: document.getElementById('fortisiem-activity-log'),
+    
+    // Processing stats
+    totalLogs: document.getElementById('total-logs'),
+    processedLogs: document.getElementById('processed-logs'),
+    remainingLogs: document.getElementById('remaining-logs'),
+    processingProgress: document.getElementById('processing-progress'),
+    criticalFound: document.getElementById('critical-found'),
+    highFound: document.getElementById('high-found'),
+    mediumFound: document.getElementById('medium-found'),
+    
+    // SOC Tester elements
+    alertType: document.getElementById('alert-type'),
+    alertData: document.getElementById('alert-data'),
+    submitAlert: document.getElementById('submit-alert'),
+    fileUploadSoc: document.getElementById('file-upload-soc'),
+    fileInputSoc: document.getElementById('file-input-soc'),
+    alertList: document.getElementById('alert-list'),
+    resultsPlaceholder: document.getElementById('results-placeholder'),
+    analysisResults: document.getElementById('analysis-results'),
+    threatAssessment: document.getElementById('threat-assessment'),
+    aiAgentUsed: document.getElementById('ai-agent-used'),
+    sourceIpDisplay: document.getElementById('source-ip-display'),
+    destinationIpDisplay: document.getElementById('destination-ip-display'),
+    severityBadges: document.getElementById('severity-badges'),
+    showJustificationBtn: document.getElementById('show-justification-btn'),
+    severityJustification: document.getElementById('severity-justification'),
+    recommendedActions: document.getElementById('recommended-actions'),
+    aiAnalysis: document.getElementById('ai-analysis'),
+    activityLog: document.getElementById('activity-log'),
+    
+    // Country display elements
+    sourceCountryBadge: document.getElementById('source-country-badge'),
+    destinationCountryBadge: document.getElementById('destination-country-badge'),
+    countryInfoSection: document.getElementById('country-info-section'),
+    
+    // Dashboard elements
+    totalAlertsDash: document.getElementById('total-alerts-dash'),
+    criticalAlerts: document.getElementById('critical-alerts'),
+    highAlerts: document.getElementById('high-alerts'),
+    resolvedAlerts: document.getElementById('resolved-alerts'),
+    sortAlerts: document.getElementById('sort-alerts'),
+    searchDashboard: document.getElementById('search-dashboard'),
+    refreshDashboard: document.getElementById('refresh-dashboard'),
+    exportDashboard: document.getElementById('export-dashboard'),
+    debugAlertsBtn: document.getElementById('debug-alerts'),
+    updateCountriesBtn: document.getElementById('update-countries'),
+    alertsDashboard: document.getElementById('alerts-dashboard')
+};
 
-                    // Send to threat intelligence API with retry logic
-                    const response = await fetchWithRetry(`${API_BASE_URL}${endpoint}`, {
-                        method: 'POST',
-                        headers: {'Content-Type': 'application/json'},
-                        body: JSON.stringify(parsedAlertData)
-                    });
+// Initialize the application
+document.addEventListener('DOMContentLoaded', function() {
+    initializeApp();
+});
 
-                    if (!response.ok) {
-                        const errorText = await response.text();
-                        throw new Error(`Threat Intel API returned ${response.status}: ${errorText}`);
-                    }
+// Main initialization function
+function initializeApp() {
+    console.log('🚀 Initializing SOC AI Dashboard...');
+    setupEventListeners();
+    checkServiceStatus();
+    loadStoredData();
+    updateUI();
+}
 
-                    const analysisResult = await response.json();
-
-                    // Update UI with threat intelligence results
-                    updateThreatIntelUI(analysisResult, parsedAlertData);
-                    
-                    // Add to dashboard
-                    addAlertToDashboard(alert, analysisResult);
-                    
-                    addLogEntry('Threat intelligence analysis complete');
-
-                } catch (error) {
-                    console.error('Threat intel API failed:', error);
-                    
-                    // Check if it's a backend error (ReferenceError)
-                    if (error.message.includes('ReferenceError') || error.message.includes('500')) {
-                        threatAssessment.innerHTML = 'Backend Error - Using Basic Analysis';
-                        ollamaAnalysis.innerHTML = `
-                            <div class="analysis-warning">
-                                <strong>Backend Error Detected:</strong> The threat intelligence service encountered an internal error.
-                                <div class="error-status">Error: ${error.message}</div>
-                                <button class="retry-button" onclick="retryAnalysis()">Retry Analysis</button>
-                            </div>
-                            <div class="log-entry">Falling back to basic analysis</div>
-                        `;
-                    } 
-                    // Check if it's a rate limiting error
-                    else if (error.message.includes('429')) {
-                        threatAssessment.innerHTML = 'Rate Limited - Using Basic Analysis';
-                        ollamaAnalysis.innerHTML = `
-                            <div class="analysis-warning">
-                                <strong>Rate Limited:</strong> The AI service is currently rate limiting requests.
-                                <div class="error-status">Error: ${error.message}</div>
-                                <button class="retry-button" onclick="retryAnalysis()">Retry Analysis</button>
-                            </div>
-                            <div class="log-entry">Falling back to basic analysis</div>
-                        `;
-                    }
-                    // Other errors
-                    else {
-                        threatAssessment.innerHTML = 'Threat Intel Unavailable - Using Basic Analysis';
-                        ollamaAnalysis.innerHTML = `
-                            <div class="analysis-warning">
-                                <strong>Connection Error:</strong> Could not connect to the threat intelligence service.
-                                <div class="error-status">Error: ${error.message}</div>
-                                <button class="retry-button" onclick="retryAnalysis()">Retry Analysis</button>
-                            </div>
-                            <div class="log-entry">Falling back to basic analysis</div>
-                        `;
-                    }
-                    
-                    // Fallback to simulated analysis
-                    const analysisResult = simulateAnalysis(alert, parsedAlertData);
-                    
-                    // Add to dashboard
-                    addAlertToDashboard(alert, analysisResult);
-                    
-                    addLogEntry('Threat intel failed, used basic analysis');
-                }
-            }
-            
-            // Retry analysis function
-            window.retryAnalysis = function() {
-                const alertData = document.getElementById('alert-data').value;
-                try {
-                    const alertJson = JSON.parse(alertData);
-                    addLogEntry('Retrying analysis after error...');
-                    analyzeAlert(alertJson);
-                } catch (e) {
-                    addLogEntry('Error: Invalid JSON format in alert data');
-                }
-            };
-            
-            // Add alert to dashboard
-            function addAlertToDashboard(alert, analysisResult) {
-                // Create a dashboard alert object
-                const dashboardAlert = {
-                    id: Date.now() + Math.random().toString(36).substr(2, 9),
-                    timestamp: new Date().toISOString(),
-                    alert: alert,
-                    analysis: analysisResult,
-                    status: 'new'
-                };
-                
-                // Add to dashboard alerts array
-                dashboardAlerts.unshift(dashboardAlert);
-                
-                // Update dashboard
-                updateDashboard();
-                
-                // Update statistics
-                updateDashboardStats();
-            }
-            
-            // Update dashboard with alerts
-            function updateDashboard(filter = 'all') {
-                if (dashboardAlerts.length === 0) {
-                    alertsDashboard.innerHTML = `
-                        <div class="empty-dashboard">
-                            <h3>No alerts analyzed yet</h3>
-                            <p>Submit alerts in the SOC Alert Tester tab to see them displayed here</p>
-                        </div>
-                    `;
-                    return;
-                }
-                
-                // Filter alerts
-                let filteredAlerts = [...dashboardAlerts];
-                
-                if (filter !== 'all') {
-                    filteredAlerts = filteredAlerts.filter(alert => {
-                        const severity = alert.analysis.verdict || 'medium';
-                        return severity.toLowerCase().includes(filter);
-                    });
-                }
-                
-                // Search alerts
-                const searchTerm = searchDashboard.value.toLowerCase();
-                if (searchTerm) {
-                    filteredAlerts = filteredAlerts.filter(alert => {
-                        const alertString = JSON.stringify(alert).toLowerCase();
-                        return alertString.includes(searchTerm);
-                    });
-                }
-                
-                // Sort alerts
-                const sortBy = sortAlerts.value;
-                switch (sortBy) {
-                    case 'newest':
-                        filteredAlerts.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-                        break;
-                    case 'oldest':
-                        filteredAlerts.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
-                        break;
-                    case 'severity':
-                        const severityOrder = {critical: 4, high: 3, medium: 2, low: 1};
-                        filteredAlerts.sort((a, b) => {
-                            const aSeverity = a.analysis.verdict || 'medium';
-                            const bSeverity = b.analysis.verdict || 'medium';
-                            return severityOrder[bSeverity] - severityOrder[aSeverity];
-                        });
-                        break;
-                }
-                
-                // Update dashboard display
-                alertsDashboard.innerHTML = '';
-                
-                if (filteredAlerts.length === 0) {
-                    alertsDashboard.innerHTML = `
-                        <div class="empty-dashboard">
-                            <h3>No alerts match your filters</h3>
-                            <p>Try changing your filter or search criteria</p>
-                        </div>
-                    `;
-                    return;
-                }
-                
-                // Create table structure
-                const table = document.createElement('table');
-                table.className = 'alerts-table';
-                
-                // Create table header
-                const thead = document.createElement('thead');
-                thead.innerHTML = `
-                    <tr>
-                        <th>Time</th>
-                        <th>Alert Type</th>
-                        <th>Source IP</th>
-                        <th>Severity</th>
-                        <th>Confidence</th>
-                        <th>Analysis & Recommendations</th>
-                        <th>Actions</th>
-                    </tr>
-                `;
-                table.appendChild(thead);
-                
-                // Create table body
-                const tbody = document.createElement('tbody');
-                
-                filteredAlerts.forEach(alert => {
-                    const severity = alert.analysis.verdict || 'medium';
-                    const severityClass = severity.toLowerCase().includes('critical') ? 'critical' : 
-                                        severity.toLowerCase().includes('high') ? 'high' :
-                                        severity.toLowerCase().includes('medium') ? 'medium' : 'low';
-                    
-                    // Extract relevant information
-                    const eventType = alert.alert.event || alert.alert['Event Type'] || 'Unknown';
-                    const sourceIp = alert.alert.srcip || alert.alert['Reporting IP'] || 'N/A';
-                    const timestamp = new Date(alert.timestamp).toLocaleString();
-                    const confidence = alert.analysis.confidence ? Math.round(alert.analysis.confidence * 100) : 'N/A';
-                    
-                    // Get analysis details
-                    const reasoning = alert.analysis.ai_analysis?.reasoning || 
-                                    alert.analysis.local_analysis?.reasoning || 
-                                    'No detailed analysis available';
-                    
-                    const recommendations = alert.analysis.ai_analysis?.recommendations || 
-                                          alert.analysis.local_analysis?.recommendations || 
-                                          ['No specific recommendations available'];
-                    
-                    // Get IOC matches if available
-                    const matchedIocs = alert.analysis.matched_iocs || [];
-                    
-                    // Check if this was a fallback analysis
-                    const isFallback = !alert.analysis.ai_analysis && alert.analysis.local_analysis;
-                    
-                    const row = document.createElement('tr');
-                    row.innerHTML = `
-                        <td>
-                            <div class="timestamp">${timestamp}</div>
-                        </td>
-                        <td>${eventType}</td>
-                        <td>${sourceIp}</td>
-                        <td><span class="alert-severity ${severityClass}">${severity}</span></td>
-                        <td><span class="alert-confidence">${confidence}%</span></td>
-                        <td class="analysis-details">
-                            ${isFallback ? '<div class="analysis-warning">Basic Analysis (AI Service Unavailable)</div>' : ''}
-                            <div class="analysis-summary">${reasoning}</div>
-                            <div class="analysis-recommendations">
-                                <strong>Actions:</strong>
-                                <ul>
-                                    ${recommendations.map(rec => `<li>${rec}</li>`).join('')}
-                                </ul>
-                            </div>
-                            ${matchedIocs.length > 0 ? `
-                            <div class="ioc-list">
-                                <strong>IOCs:</strong>
-                                ${matchedIocs.map(ioc => `<span class="ioc-item">${ioc}</span>`).join('')}
-                            </div>
-                            ` : ''}
-                        </td>
-                        <td>
-                            <div class="alert-actions">
-                                <button class="btn-success">✓</button>
-                                <button class="btn-danger">✗</button>
-                                <button>🔍</button>
-                            </div>
-                        </td>
-                    `;
-                    tbody.appendChild(row);
-                });
-                
-                table.appendChild(tbody);
-                alertsDashboard.appendChild(table);
-            }
-            
-            // Update dashboard statistics
-            function updateDashboardStats() {
-                totalAlertsDash.textContent = dashboardAlerts.length;
-                
-                const criticalCount = dashboardAlerts.filter(alert => {
-                    const severity = alert.analysis.verdict || 'medium';
-                    return severity.toLowerCase().includes('critical');
-                }).length;
-                
-                const highCount = dashboardAlerts.filter(alert => {
-                    const severity = alert.analysis.verdict || 'medium';
-                    return severity.toLowerCase().includes('high') && !severity.toLowerCase().includes('critical');
-                }).length;
-                
-                criticalAlerts.textContent = criticalCount;
-                highAlerts.textContent = highCount;
-                
-                // Update analysis history tab as well
-                totalAnalyses.textContent = dashboardAlerts.length;
-                criticalThreats.textContent = criticalCount;
-                highThreats.textContent = highCount;
-            }
-            
-            // Update UI with threat intelligence results
-            function updateThreatIntelUI(analysisResult, alertData) {
-                // Handle cases where analysisResult might be malformed or incomplete
-                if (!analysisResult) {
-                    threatAssessment.innerHTML = 'Invalid analysis result received';
-                    severityBadges.innerHTML = '<div class="severity-badge unknown">Unknown</div>';
-                    recommendedActions.innerHTML = '<ul><li>No recommendations available</li></ul>';
-                    ollamaAnalysis.innerHTML = '<div class="log-entry">Error: Received invalid analysis data</div>';
-                    return;
-                }
-                
-                // Extract data with fallbacks for missing properties
-                // Handle both table format and structured format
-                const verdict = analysisResult.verdict || analysisResult['Alert Type'] || analysisResult['Severity'] || 'UNKNOWN';
-                const confidence = analysisResult.confidence ? Math.round(analysisResult.confidence * 100) : 
-                                 (analysisResult.Confidence ? parseInt(analysisResult.Confidence) : 'N/A');
-                
-                // Update threat assessment
-                threatAssessment.innerHTML = `Threat Assessment: <strong>${verdict}</strong> (${confidence}% confidence)`;
-                
-                // Update severity badge
-                let severityClass = 'medium';
-                let severityText = verdict;
-                
-                if (verdict.includes('MALICIOUS') || verdict.includes('CRITICAL') || verdict.toLowerCase().includes('critical')) {
-                    severityClass = 'critical';
-                } else if (verdict.includes('SUSPICIOUS') || verdict.includes('HIGH') || verdict.toLowerCase().includes('high')) {
-                    severityClass = 'high';
-                } else if (verdict.includes('BENIGN') || verdict.includes('LOW') || verdict.toLowerCase().includes('low')) {
-                    severityClass = 'low';
-                } else if (verdict.includes('MEDIUM') || verdict.toLowerCase().includes('medium')) {
-                    severityClass = 'medium';
-                }
-                
-                severityBadges.innerHTML = `<div class="severity-badge ${severityClass}">${severityText}</div>`;
-                
-                // Update recommended actions - handle various response formats
-                recommendedActions.innerHTML = '';
-                const actionsList = document.createElement('ul');
-                
-                // Extract recommendations from different possible locations in the response
-                let recommendations = [];
-                
-                // Check various possible locations for recommendations
-                if (analysisResult.ai_analysis?.recommendations) {
-                    recommendations = analysisResult.ai_analysis.recommendations;
-                } else if (analysisResult.local_analysis?.recommendations) {
-                    recommendations = analysisResult.local_analysis.recommendations;
-                } else if (analysisResult.recommendations) {
-                    recommendations = analysisResult.recommendations;
-                } else if (analysisResult['Analysis & Recommendations'] && 
-                           analysisResult['Analysis & Recommendations'] !== 'No detailed analysis available') {
-                    // Parse from the table-like format
-                    recommendations = [analysisResult['Analysis & Recommendations']];
-                } else if (analysisResult.Actions && analysisResult.Actions !== 'No specific recommendations available') {
-                    // Parse actions from the malformed response
-                    const actionsText = analysisResult.Actions;
-                    if (actionsText) {
-                        // Try to extract meaningful actions from the text
-                        const actionItems = actionsText.split('|').map(item => item.trim()).filter(item => item);
-                        recommendations = actionItems.length > 0 ? actionItems : ['No specific recommendations available'];
-                    }
-                }
-                
-                // If no recommendations found, use fallbacks
-                if (recommendations.length === 0) {
-                    recommendations = ['Review alert details', 'Monitor for similar activity'];
-                }
-                
-                // Add recommendations to the UI
-                recommendations.forEach(action => {
-                    const li = document.createElement('li');
-                    li.textContent = action;
-                    actionsList.appendChild(li);
-                });
-                recommendedActions.appendChild(actionsList);
-                
-                // Update threat intelligence analysis display
-                ollamaAnalysis.innerHTML = '';
-                
-                // Add verdict and confidence
-                const verdictEntry = document.createElement('div');
-                verdictEntry.className = 'log-entry';
-                verdictEntry.innerHTML = `<span class="ioc-match">Verdict:</span> ${verdict} (<span class="confidence-high">${confidence}% confidence</span>)`;
-                ollamaAnalysis.appendChild(verdictEntry);
-                
-                // Add reasoning if available from various sources
-                let reasoning = '';
-                if (analysisResult.ai_analysis?.reasoning) {
-                    reasoning = analysisResult.ai_analysis.reasoning;
-                } else if (analysisResult.local_analysis?.reasoning) {
-                    reasoning = analysisResult.local_analysis.reasoning;
-                } else if (analysisResult['Analysis & Recommendations'] && 
-                           analysisResult['Analysis & Recommendations'] !== 'No detailed analysis available') {
-                    reasoning = analysisResult['Analysis & Recommendations'];
-                } else if (analysisResult.reasoning) {
-                    reasoning = analysisResult.reasoning;
-                }
-                
-                if (reasoning) {
-                    const reasonEntry = document.createElement('div');
-                    reasonEntry.className = 'log-entry';
-                    reasonEntry.innerHTML = `<span class="ioc-match">Analysis:</span> ${reasoning}`;
-                    ollamaAnalysis.appendChild(reasonEntry);
-                }
-                
-                // Add matched IOCs if any
-                if (analysisResult.matched_iocs && analysisResult.matched_iocs.length > 0) {
-                    const iocEntry = document.createElement('div');
-                    iocEntry.className = 'log-entry';
-                    iocEntry.innerHTML = `<span class="ioc-match">Matched IOCs:</span> ${analysisResult.matched_iocs.join(', ')}`;
-                    ollamaAnalysis.appendChild(iocEntry);
-                }
-                
-                // Add extracted IOCs if available
-                if (analysisResult.extracted_iocs) {
-                    const iocs = analysisResult.extracted_iocs;
-                    if (iocs.ips && iocs.ips.length > 0) {
-                        const ipEntry = document.createElement('div');
-                        ipEntry.className = 'log-entry';
-                        ipEntry.innerHTML = `<span class="ioc-match">Extracted IPs:</span> ${iocs.ips.join(', ')}`;
-                        ollamaAnalysis.appendChild(ipEntry);
-                    }
-                }
-                
-                // Add source IP if available
-                const sourceIp = alertData.srcip || alertData['Source IP'] || alertData['Reporting IP'] || 'N/A';
-                if (sourceIp !== 'N/A') {
-                    const ipEntry = document.createElement('div');
-                    ipEntry.className = 'log-entry';
-                    ipEntry.innerHTML = `<span class="ioc-match">Source IP:</span> ${sourceIp}`;
-                    ollamaAnalysis.appendChild(ipEntry);
-                }
-                
-                // Add timestamp
-                const timeEntry = document.createElement('div');
-                timeEntry.className = 'log-entry';
-                timeEntry.textContent = `Analysis completed: ${new Date().toLocaleTimeString()}`;
-                ollamaAnalysis.appendChild(timeEntry);
-            }
-            
-            // Simulated analysis as fallback
-            function simulateAnalysis(alert, parsedAlertData) {
-                // Extract event type from various possible locations
-                const eventType = alert.event || alert['Event Type'] || alert['Event Name'] || 'Unknown';
-                
-                // Determine threat type based on alert content
-                let threatType = 'Unknown Threat';
-                let severity = 'medium';
-                let actions = ['Review the alert details', 'Monitor for further activity'];
-                let reasoning = 'Insufficient data for detailed analysis';
-
-                if (eventType.includes('auth-failed') || eventType.includes('authentication')) {
-                    threatType = 'Brute Force Attack';
-                    severity = 'high';
-                    reasoning = 'Multiple failed authentication attempts detected';
-                    actions = [
-                        'Block source IP ' + (alert.srcip || parsedAlertData.srcip || 'unknown'),
-                        'Reset credentials for affected accounts',
-                        'Review authentication logs for patterns',
-                        'Implement account lockout policy if not present'
-                    ];
-                } else if (eventType.includes('rogue')) {
-                    threatType = 'Rogue Access Point';
-                    severity = 'high';
-                    reasoning = 'Unauthorized wireless access point detected';
-                    actions = [
-                        'Locate and disable rogue AP: ' + (parsedAlertData.ssid || 'unknown'),
-                        'Scan for affected devices',
-                        'Review wireless network policies',
-                        'Update WIPS signatures'
-                    ];
-                } else if (eventType.includes('malware')) {
-                    threatType = 'Malware Infection';
-                    severity = 'critical';
-                    reasoning = 'Potential malware activity detected';
-                    actions = [
-                        'Isolate affected system immediately',
-                        'Scan for additional infections',
-                        'Review execution path and artifacts',
-                        'Check network connections for exfiltration'
-                    ];
-                } else if (eventType.includes('traffic') || eventType.includes('network')) {
-                    threatType = 'Suspicious Network Traffic';
-                    severity = 'medium';
-                    reasoning = 'Anomalous network activity detected';
-                    actions = [
-                        'Investigate source IP: ' + (alert.srcip || parsedAlertData.srcip || 'unknown'),
-                        'Check firewall rules for anomalies',
-                        'Review network traffic patterns',
-                        'Monitor for additional suspicious activity'
-                    ];
-                }
-                
-                // Return analysis result
-                return {
-                    verdict: severity,
-                    confidence: 0.75,
-                    matched_iocs: [],
-                    local_analysis: {
-                        reasoning: reasoning,
-                        recommendations: actions
-                    },
-                    ai_analysis: null // Indicate this is a fallback analysis
-                };
-            }
-            
-            // Parse a single alert
-            function parseAlert(alert) {
-                try {
-                    // Create a copy of the original alert
-                    const parsedAlert = {...alert};
-                    
-                    // Check if we have a raw event log to parse
-                    if (alert['Raw Event Log']) {
-                        const rawLog = alert['Raw Event Log'];
-                        
-                        // Parse key=value pairs from the raw log
-                        const regex = /(\w+)=([^=]*)(?=\s+\w+=|$)/g;
-                        let match;
-                        
-                        while ((match = regex.exec(rawLog)) !== null) {
-                            const key = match[1];
-                            let value = match[2].trim();
-                            
-                            // Remove quotes if present
-                            if (value.startsWith('"') && value.endsWith('"')) {
-                                value = value.slice(1, -1);
-                            }
-                            
-                            // Try to convert to number if possible
-                            if (!isNaN(value) && value !== '') {
-                                parsedAlert[key] = Number(value);
-                            } else if (value === 'true' || value === 'false') {
-                                parsedAlert[key] = value === 'true';
-                            } else {
-                                parsedAlert[key] = value;
-                            }
-                        }
-                    }
-                    
-                    return parsedAlert;
-                } catch (error) {
-                    console.error('Error parsing alert:', error);
-                    return null;
-                }
-            }
-            
-            // Add entry to log
-            function addLogEntry(message) {
-                const now = new Date();
-                const time = now.toLocaleTimeString();
-                const logEntry = document.createElement('div');
-                logEntry.className = 'log-entry';
-                logEntry.textContent = `[${time}] ${message}`;
-                activityLog.prepend(logEntry);
-            }
-            
-            // JSON syntax highlighting
-            function syntaxHighlight(json) {
-                if (typeof json != 'string') {
-                    json = JSON.stringify(json, undefined, 2);
-                }
-                json = json.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-                return json.replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, function (match) {
-                    let cls = 'json-number';
-                    if (/^"/.test(match)) {
-                        if (/:$/.test(match)) {
-                            cls = 'json-key';
-                        } else {
-                            cls = 'json-string';
-                        }
-                    } else if (/true|false/.test(match)) {
-                        cls = 'json-boolean';
-                    } else if (/null/.test(match)) {
-                        cls = 'json-null';
-                    }
-                    return '<span class="' + cls + '">' + match + '</span>';
-                });
-            }
-            
-            // Check backend status on load
-            checkBackendStatus();
+// Setup all event listeners
+function setupEventListeners() {
+    console.log('🔧 Setting up event listeners...');
+    
+    // Tab navigation
+    document.querySelectorAll('.tab').forEach(tab => {
+        tab.addEventListener('click', function() {
+            switchTab(this.dataset.tab);
         });
-    </script>
+    });
+
+    // FortiSIEM file upload
+    elements.fortisiemFileUpload.addEventListener('click', () => elements.fortisiemFileInput.click());
+    elements.fortisiemFileInput.addEventListener('change', handleFortiSIEMFileUpload);
+
+    // FortiSIEM controls
+    elements.startProcessing.addEventListener('click', startProcessing);
+    elements.pauseProcessing.addEventListener('click', togglePauseProcessing);
+    elements.stopProcessing.addEventListener('click', stopProcessing);
+    elements.analyzeSample.addEventListener('click', analyzeSample);
+    elements.clearFortisiem.addEventListener('click', clearFortiSIEM);
+    elements.exportResults.addEventListener('click', exportResults);
+    elements.viewDashboard.addEventListener('click', () => switchTab('dashboard'));
+
+    // SOC Tester controls
+    elements.submitAlert.addEventListener('click', submitAlert);
+    elements.fileUploadSoc.addEventListener('click', () => elements.fileInputSoc.click());
+    elements.fileInputSoc.addEventListener('change', handleSOCFileUpload);
+    elements.showJustificationBtn.addEventListener('click', toggleJustification);
+
+    // Dashboard controls
+    elements.refreshDashboard.addEventListener('click', updateDashboard);
+    elements.exportDashboard.addEventListener('click', exportDashboard);
+    elements.debugAlertsBtn.addEventListener('click', debugAlerts);
+    elements.updateCountriesBtn.addEventListener('click', updateAllCountries);
+    elements.sortAlerts.addEventListener('change', updateDashboard);
+    elements.searchDashboard.addEventListener('input', updateDashboard);
+
+    console.log('✅ Event listeners setup complete');
+}
+
+// Check service status with REAL backend
+async function checkServiceStatus() {
+    console.log('🔍 Checking SOC AI Backend status...');
+    
+    try {
+        const response = await fetch(`${SOC_AI_BACKEND}/api/health`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (response.ok) {
+            const health = await response.json();
+            elements.backendStatus.textContent = 'Backend: Connected';
+            elements.backendStatus.className = 'status-badge online';
+            elements.offenseStatus.textContent = 'AI Agents: Active';
+            elements.offenseStatus.className = 'status-badge online';
+            elements.redisStatus.textContent = 'Universal Parser: Ready';
+            elements.redisStatus.className = 'status-badge online';
+            
+            addToActivityLog('system', `✅ SOC AI Backend connected: ${health.message}`);
+            console.log('✅ Backend health:', health);
+        } else {
+            throw new Error(`HTTP ${response.status}`);
+        }
+    } catch (error) {
+        console.error('Backend connection failed:', error);
+        elements.backendStatus.textContent = 'Backend: Offline';
+        elements.backendStatus.className = 'status-badge offline';
+        elements.offenseStatus.textContent = 'AI Agents: Unavailable';
+        elements.offenseStatus.className = 'status-badge offline';
+        elements.redisStatus.textContent = 'Using Fallback Mode';
+        elements.redisStatus.className = 'status-badge checking';
+        
+        addToActivityLog('system', `❌ SOC AI Backend offline: ${error.message}`, 'error');
+    }
+}
+
+// NEW: Get country information for IP
+async function getCountryForIP(ipAddress) {
+    if (!ipAddress || ipAddress === 'Unknown' || ipAddress.startsWith('192.168.') || 
+        ipAddress.startsWith('10.') || ipAddress.startsWith('172.')) {
+        return {
+            country: 'Internal',
+            country_code: 'INT',
+            continent: 'Internal Network',
+            error: 'Internal IP address'
+        };
+    }
+
+    try {
+        const response = await fetch(`${SOC_AI_BACKEND}/api/ip-country`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ ip: ipAddress })
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const countryData = await response.json();
+        return countryData;
+    } catch (error) {
+        console.error('Error fetching country data:', error);
+        return {
+            country: 'Unknown',
+            country_code: 'XX',
+            continent: 'Unknown',
+            error: error.message
+        };
+    }
+}
+
+// NEW: Get country flag emoji
+function getCountryFlag(countryCode) {
+    if (!countryCode || countryCode === 'XX' || countryCode === 'INT') return '🏴';
+    
+    try {
+        const codePoints = countryCode
+            .toUpperCase()
+            .split('')
+            .map(char => 127397 + char.charCodeAt());
+        
+        return String.fromCodePoint(...codePoints);
+    } catch (error) {
+        console.error('Error generating flag for country code:', countryCode, error);
+        return '🏴';
+    }
+}
+
+// NEW: Update country display for single alert
+function updateCountryDisplay(sourceIP, destinationIP, sourceCountry, destinationCountry) {
+    // Update source country badge
+    if (sourceCountry && sourceCountry.country !== 'Unknown' && sourceCountry.country !== 'Internal') {
+        elements.sourceCountryBadge.innerHTML = `
+            ${getCountryFlag(sourceCountry.country_code)} ${sourceCountry.country_code}
+            ${sourceCountry.is_in_european_union ? '🇪🇺' : ''}
+        `;
+        elements.sourceCountryBadge.style.display = 'inline-block';
+        elements.sourceCountryBadge.title = sourceCountry.country;
+    } else {
+        elements.sourceCountryBadge.style.display = 'none';
+    }
+
+    // Update destination country badge
+    if (destinationCountry && destinationCountry.country !== 'Unknown' && destinationCountry.country !== 'Internal') {
+        elements.destinationCountryBadge.innerHTML = `
+            ${getCountryFlag(destinationCountry.country_code)} ${destinationCountry.country_code}
+            ${destinationCountry.is_in_european_union ? '🇪🇺' : ''}
+        `;
+        elements.destinationCountryBadge.style.display = 'inline-block';
+        elements.destinationCountryBadge.title = destinationCountry.country;
+    } else {
+        elements.destinationCountryBadge.style.display = 'none';
+    }
+
+    // Update country info section
+    let countryInfoHTML = '';
+    
+    if (sourceCountry && sourceCountry.country !== 'Unknown' && sourceCountry.country !== 'Internal') {
+        countryInfoHTML += `
+            <div class="geo-info">
+                <strong>Source Geolocation:</strong> ${sourceCountry.country} 
+                (${sourceCountry.continent || 'Unknown'})
+                ${sourceCountry.is_in_european_union ? ' - European Union' : ''}
+                ${sourceCountry.accuracy_radius ? ` - Accuracy: ${sourceCountry.accuracy_radius}km` : ''}
+            </div>
+        `;
+    }
+    
+    if (destinationCountry && destinationCountry.country !== 'Unknown' && destinationCountry.country !== 'Internal') {
+        countryInfoHTML += `
+            <div class="geo-info">
+                <strong>Destination Geolocation:</strong> ${destinationCountry.country} 
+                (${destinationCountry.continent || 'Unknown'})
+                ${destinationCountry.is_in_european_union ? ' - European Union' : ''}
+                ${destinationCountry.accuracy_radius ? ` - Accuracy: ${destinationCountry.accuracy_radius}km` : ''}
+            </div>
+        `;
+    }
+
+    if (countryInfoHTML) {
+        elements.countryInfoSection.innerHTML = countryInfoHTML;
+        elements.countryInfoSection.style.display = 'block';
+    } else {
+        elements.countryInfoSection.style.display = 'none';
+    }
+}
+
+// NEW: Update country information for all alerts in dashboard
+async function updateAllCountries() {
+    if (processedAlerts.length === 0) {
+        addToActivityLog('dashboard', 'No alerts to update country information for', 'error');
+        return;
+    }
+
+    addToActivityLog('dashboard', 'Updating country information for all alerts...');
+    
+    let updatedCount = 0;
+    
+    for (const alert of processedAlerts) {
+        // Update source country
+        if (alert.sourceIP && alert.sourceIP !== 'Unknown' && !alert.sourceIP.startsWith('192.168.') && 
+            !alert.sourceIP.startsWith('10.') && !alert.sourceIP.startsWith('172.')) {
+            
+            if (!alert.sourceCountry || alert.sourceCountry.error) {
+                alert.sourceCountry = await getCountryForIP(alert.sourceIP);
+                updatedCount++;
+            }
+        }
+        
+        // Update destination country
+        if (alert.destinationIP && alert.destinationIP !== 'Unknown' && !alert.destinationIP.startsWith('192.168.') && 
+            !alert.destinationIP.startsWith('10.') && !alert.destinationIP.startsWith('172.')) {
+            
+            if (!alert.destinationCountry || alert.destinationCountry.error) {
+                alert.destinationCountry = await getCountryForIP(alert.destinationIP);
+                updatedCount++;
+            }
+        }
+        
+        // Small delay to avoid overwhelming the server
+        await new Promise(resolve => setTimeout(resolve, 100));
+    }
+    
+    saveStoredData();
+    updateDashboard();
+    addToActivityLog('dashboard', `✅ Updated country information for ${updatedCount} IP addresses`, 'success');
+}
+
+// Tab switching function
+function switchTab(tabName) {
+    console.log(`🔄 Switching to tab: ${tabName}`);
+    
+    // Update tabs
+    document.querySelectorAll('.tab').forEach(tab => {
+        tab.classList.remove('active');
+    });
+    document.querySelectorAll('.tab-content').forEach(content => {
+        content.classList.remove('active');
+    });
+
+    // Activate selected tab
+    document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
+    document.getElementById(tabName).classList.add('active');
+
+    // Update dashboard if switching to dashboard tab
+    if (tabName === 'dashboard') {
+        updateDashboard();
+    }
+}
+
+// Handle FortiSIEM file upload
+function handleFortiSIEMFileUpload(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    console.log(`📁 Processing file: ${file.name}`);
+    addToActivityLog('fortisiem', `Uploading file: ${file.name}`);
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            const data = JSON.parse(e.target.result);
+            fortisiemLogs = Array.isArray(data) ? data : [data];
+            
+            elements.totalLogs.textContent = fortisiemLogs.length;
+            elements.remainingLogs.textContent = fortisiemLogs.length;
+            
+            updateLogPreview();
+            addToActivityLog('fortisiem', `Successfully loaded ${fortisiemLogs.length} logs`);
+            
+        } catch (error) {
+            console.error('Error parsing JSON:', error);
+            addToActivityLog('fortisiem', `Error parsing JSON file: ${error.message}`, 'error');
+        }
+    };
+    reader.readAsText(file);
+}
+
+// Handle SOC file upload
+function handleSOCFileUpload(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    console.log(`📁 Processing SOC file: ${file.name}`);
+    addToActivityLog('soc', `Loading test data from: ${file.name}`);
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            const data = JSON.parse(e.target.result);
+            const alerts = Array.isArray(data) ? data : [data];
+            
+            // Populate alert list
+            elements.alertList.innerHTML = '';
+            alerts.slice(0, 10).forEach((alert, index) => {
+                const alertItem = document.createElement('div');
+                alertItem.className = 'alert-item';
+                alertItem.innerHTML = `
+                    <strong>Alert ${index + 1}</strong>
+                    <div class="alert-summary">${alert['Event Type'] || 'Unknown Type'}</div>
+                `;
+                alertItem.addEventListener('click', () => {
+                    elements.alertData.value = JSON.stringify(alert, null, 2);
+                });
+                elements.alertList.appendChild(alertItem);
+            });
+            
+            addToActivityLog('soc', `Loaded ${alerts.length} test alerts`);
+            
+        } catch (error) {
+            console.error('Error parsing JSON:', error);
+            addToActivityLog('soc', `Error parsing JSON file: ${error.message}`, 'error');
+        }
+    };
+    reader.readAsText(file);
+}
+
+// Update log preview
+function updateLogPreview() {
+    elements.fortisiemLogPreview.innerHTML = '';
+    
+    if (fortisiemLogs.length === 0) {
+        elements.fortisiemLogPreview.innerHTML = `
+            <div class="empty-dashboard">
+                <p>No FortiSIEM logs uploaded yet</p>
+            </div>
+        `;
+        return;
+    }
+
+    fortisiemLogs.slice(0, 10).forEach((log, index) => {
+        const logItem = document.createElement('div');
+        logItem.className = 'alert-item';
+        logItem.innerHTML = `
+            <strong>Log ${index + 1}</strong>
+            <div class="alert-summary">${log['Event Type'] || 'Unknown Type'} - ${log.srcip || 'No IP'} → ${log.dstip || 'No IP'}</div>
+        `;
+        elements.fortisiemLogPreview.appendChild(logItem);
+    });
+
+    if (fortisiemLogs.length > 10) {
+        const moreItem = document.createElement('div');
+        moreItem.className = 'alert-item';
+        moreItem.innerHTML = `<em>... and ${fortisiemLogs.length - 10} more logs</em>`;
+        elements.fortisiemLogPreview.appendChild(moreItem);
+    }
+}
+
+// Add to activity log
+function addToActivityLog(source, message, type = 'info') {
+    const timestamp = new Date().toLocaleTimeString();
+    const logEntry = document.createElement('div');
+    logEntry.className = 'log-entry';
+    
+    if (type === 'error') {
+        logEntry.style.color = 'var(--danger)';
+    } else if (type === 'warning') {
+        logEntry.style.color = 'var(--warning)';
+    }
+    
+    logEntry.innerHTML = `<strong>[${timestamp}] ${source}:</strong> ${message}`;
+    
+    // Add to appropriate log
+    if (source === 'fortisiem') {
+        elements.fortisiemActivityLog.prepend(logEntry);
+    } else {
+        elements.activityLog.prepend(logEntry);
+    }
+    
+    console.log(`[${source}] ${message}`);
+}
+
+// 🚀 SUBMIT ALERT TO REAL SOC AI BACKEND
+async function submitAlert() {
+    let alertData;
+    
+    try {
+        alertData = JSON.parse(elements.alertData.value);
+        console.log('✅ JSON parsed successfully:', alertData);
+    } catch (error) {
+        addToActivityLog('soc', `❌ Invalid JSON: ${error.message}`, 'error');
+        return;
+    }
+
+    const alertType = elements.alertType.value;
+    addToActivityLog('soc', `🚀 Submitting to SOC AI Backend...`);
+
+    // Show loading state
+    elements.resultsPlaceholder.style.display = 'none';
+    elements.analysisResults.style.display = 'block';
+    elements.threatAssessment.innerHTML = '<div style="color: var(--info)">🔄 Analyzing with SOC AI Backend...</div>';
+    elements.aiAnalysis.innerHTML = '<div class="log-entry">Connecting to backend...</div>';
+
+    try {
+        console.log('📤 Sending to backend:', alertData);
+        
+        // Add timeout to avoid hanging requests
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10000);
+        
+        const response = await fetch(`${SOC_AI_BACKEND}/api/analyze`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(alertData),
+            signal: controller.signal
+        });
+
+        clearTimeout(timeoutId);
+
+        console.log('📥 Backend response status:', response.status);
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+
+        const result = await response.json();
+        console.log('✅ REAL SOC AI Response received:', result);
+
+        // ✅ Process the REAL API response
+        processRealAPIResponse(result, alertData);
+        addToActivityLog('soc', '✅ Alert analysis completed by SOC AI Backend');
+
+    } catch (error) {
+        console.error('❌ Request failed:', error);
+        
+        // Show detailed error
+        elements.threatAssessment.innerHTML = `<strong style="color: var(--danger)">Request Failed</strong>`;
+        elements.aiAnalysis.innerHTML = `
+            <div class="log-entry"><strong>❌ Error:</strong> ${error.message}</div>
+            <div class="log-entry"><strong>🌐 Endpoint:</strong> ${SOC_AI_BACKEND}/api/analyze</div>
+            <div class="log-entry"><strong>🔧 Status:</strong> Backend is running but request failed</div>
+        `;
+        
+        addToActivityLog('soc', `❌ Request failed: ${error.message}`, 'error');
+        
+        // Use enhanced fallback
+        await fallbackAnalysis(alertData, alertType);
+    }
+}
+
+// ✅ ENHANCED IP EXTRACTION - SIMPLIFIED AND ROBUST
+function extractIPAddresses(apiResult, originalAlert) {
+    console.log('🔄 Extracting IP addresses...');
+    
+    // Extract from API result first
+    let sourceIP = apiResult.tier1_analysis?.source_address;
+    let destinationIP = apiResult.tier1_analysis?.destination_address;
+    
+    // If not found in API result, try original alert
+    if (!sourceIP) {
+        sourceIP = originalAlert.srcip || originalAlert.src || originalAlert.source_ip || 'Unknown';
+    }
+    if (!destinationIP) {
+        destinationIP = originalAlert.dstip || originalAlert.dst || originalAlert.dest_ip || 'Unknown';
+    }
+    
+    // Final fallback to raw log parsing
+    if ((!sourceIP || sourceIP === 'Unknown') && originalAlert['Raw Event Log']) {
+        const rawSource = extractIPFromRawLog(originalAlert['Raw Event Log'], 'srcip');
+        if (rawSource) sourceIP = rawSource;
+    }
+    
+    if ((!destinationIP || destinationIP === 'Unknown') && originalAlert['Raw Event Log']) {
+        const rawDest = extractIPFromRawLog(originalAlert['Raw Event Log'], 'dstip');
+        if (rawDest) destinationIP = rawDest;
+    }
+    
+    console.log('✅ IP Extraction Result:', { sourceIP, destinationIP });
+    return { sourceIP, destinationIP };
+}
+
+function extractIPFromRawLog(rawLog, ipType) {
+    if (!rawLog || typeof rawLog !== 'string') return null;
+    
+    const patterns = {
+        srcip: /srcip=([\d\.:a-fA-F]+)/,
+        dstip: /dstip=([\d\.:a-fA-F]+)/,
+        src: /src=([\d\.:a-fA-F]+)/,
+        dst: /dst=([\d\.:a-fA-F]+)/
+    };
+    
+    try {
+        const match = rawLog.match(patterns[ipType]);
+        return match ? match[1] : null;
+    } catch (error) {
+        console.error('Error parsing raw log for IP:', error);
+        return null;
+    }
+}
+
+// ✅ PROCESS REAL SOC AI BACKEND RESPONSE - SIMPLIFIED
+async function processRealAPIResponse(apiResult, originalAlert) {
+    elements.resultsPlaceholder.style.display = 'none';
+    elements.analysisResults.style.display = 'block';
+
+    console.log('🔍 Processing REAL SOC AI response:', apiResult);
+
+    // Extract data from two-tier response
+    const tier1 = apiResult.tier1_analysis || {};
+    const tier2 = apiResult.tier2_analysis || {};
+    const final = apiResult.final_assessment || {};
+
+    // ✅ Extract IP addresses from the response
+    const { sourceIP, destinationIP } = extractIPAddresses(apiResult, originalAlert);
+
+    // Extract severity and confidence
+    const severity = (tier2.severity || final.primary_threat || 'unknown').toLowerCase();
+    const confidence = Math.round((tier2.confidence || 0) * 100);
+    const verdict = tier2.verdict || 'analyzed';
+
+    // ✅ Update IP displays
+    elements.sourceIpDisplay.textContent = sourceIP;
+    elements.destinationIpDisplay.textContent = destinationIP;
+
+    // NEW: Get and display country information
+    const sourceCountry = await getCountryForIP(sourceIP);
+    const destinationCountry = await getCountryForIP(destinationIP);
+    updateCountryDisplay(sourceIP, destinationIP, sourceCountry, destinationCountry);
+
+    // Update threat assessment
+    elements.threatAssessment.innerHTML = `The alert has been analyzed as <strong>${verdict}</strong> with <strong>${severity}</strong> severity by the Two-Tier SOC AI system.`;
+
+    // Update AI agent used
+    const agent = tier1.agent || 'Auto-routed';
+    elements.aiAgentUsed.textContent = agent;
+    elements.aiAgentUsed.className = 'status-badge online';
+
+    // Update severity badges
+    const severityClass = ['critical', 'high', 'medium', 'low', 'info'].includes(severity) ? severity : 'unknown';
+    elements.severityBadges.innerHTML = `
+        <div class="severity-badge ${severityClass}">${severity.toUpperCase()}</div>
+        <div class="alert-confidence confidence-${getConfidenceLevel(confidence)}">${confidence}% confidence</div>
+        <span class="threat-intel-badge">Real AI</span>
+    `;
+
+    // Update recommended actions
+    let actionsHTML = '<ul>';
+    const recommendations = tier2.recommended_actions || ['Review alert details', 'Monitor for similar activity'];
+    
+    recommendations.forEach(action => {
+        actionsHTML += `<li>${action}</li>`;
+    });
+    actionsHTML += '</ul>';
+    elements.recommendedActions.innerHTML = actionsHTML;
+
+    // Update AI analysis details
+    let analysisHTML = '';
+
+    // Tier 1 Analysis
+    analysisHTML += `<div class="log-entry"><strong>🎯 Tier 1 Analysis (${tier1.agent || 'NetworkAI'}):</strong> ${tier1.threat_type || 'Threat assessment completed'}</div>`;
+    analysisHTML += `<div class="log-entry"><strong>📊 Risk Score:</strong> ${tier1.risk_score || 'N/A'}/10</div>`;
+
+    // Tier 2 Analysis
+    analysisHTML += `<div class="log-entry"><strong>🛡️ Tier 2 Analysis (ThreatIntelAI):</strong> ${tier2.verdict || 'Analysis completed'}</div>`;
+    
+    if (tier2.matched_iocs && tier2.matched_iocs.length > 0) {
+        analysisHTML += `<div class="log-entry"><strong>🔍 Matched IOCs:</strong> ${tier2.matched_iocs.slice(0, 5).join(', ')}</div>`;
+    }
+
+    // Final Assessment
+    analysisHTML += `<div class="log-entry"><strong>🎯 Final Assessment:</strong> ${final.combined_risk_score ? `Combined Risk: ${final.combined_risk_score}/10` : 'Assessment complete'}</div>`;
+
+    elements.aiAnalysis.innerHTML = analysisHTML;
+
+    // ✅ Store the processed alert for dashboard - SIMPLIFIED
+    const processedAlert = {
+        id: generateAlertId(),
+        alertNumber: alertCounter++,
+        timestamp: new Date().toISOString(),
+        type: originalAlert['Event Type'] || 'Unknown',
+        severity: severity,
+        confidence: confidence,
+        summary: `SOC AI: ${severity} - ${verdict}`,
+        agent: agent,
+        recommendations: recommendations,
+        // ✅ CRITICAL: Store IP addresses directly
+        sourceIP: sourceIP,
+        destinationIP: destinationIP,
+        // NEW: Store country information
+        sourceCountry: sourceCountry,
+        destinationCountry: destinationCountry,
+        // Also store original IPs as backup
+        srcip: originalAlert.srcip,
+        dstip: originalAlert.dstip
+    };
+
+    processedAlerts.push(processedAlert);
+    saveStoredData();
+    updateDashboard();
+
+    // Show justification with real data
+    updateJustification(apiResult);
+}
+
+// Update justification with real data
+function updateJustification(apiResult) {
+    const tier2 = apiResult.tier2_analysis || {};
+    
+    elements.severityJustification.innerHTML = `
+        <div class="justification-title">SOC AI Analysis Justification</div>
+        <div class="justification-reasons">
+            ${tier2.reasons ? tier2.reasons.map(reason => 
+                `<div class="justification-reason">${reason}</div>`
+            ).join('') : `
+                <div class="justification-reason">Two-tier analysis completed</div>
+                <div class="justification-reason">Threat intelligence assessment</div>
+                <div class="justification-reason">Universal log parsing applied</div>
+            `}
+        </div>
+        <div class="confidence-factors">
+            <div class="confidence-factor">Tier 1: ${apiResult.tier1_analysis?.agent || 'NetworkAI'}</div>
+            <div class="confidence-factor">Tier 2: ThreatIntelAI</div>
+            <div class="confidence-factor">Confidence: ${Math.round((tier2.confidence || 0) * 100)}%</div>
+        </div>
+    `;
+    
+    elements.showJustificationBtn.style.display = 'block';
+}
+
+// 🚀 BULK PROCESSING - SIMPLIFIED
+async function startProcessing() {
+    if (fortisiemLogs.length === 0) {
+        addToActivityLog('fortisiem', 'No logs to process. Please upload a file first.', 'error');
+        return;
+    }
+
+    const batchSize = Math.min(parseInt(document.getElementById('batch-size').value) || 100, 100);
+    const analysisType = document.getElementById('analysis-type').value;
+    
+    currentProcessingState = {
+        isProcessing: true,
+        isPaused: false,
+        currentBatch: 0,
+        totalBatches: Math.ceil(fortisiemLogs.length / batchSize),
+        processedCount: 0
+    };
+
+    // Update UI
+    elements.startProcessing.disabled = true;
+    elements.pauseProcessing.disabled = false;
+    elements.stopProcessing.disabled = false;
+    elements.exportResults.disabled = true;
+
+    addToActivityLog('fortisiem', `🚀 Starting bulk processing of ${fortisiemLogs.length} logs in batches of ${batchSize}`);
+
+    // Process in batches
+    await processBatches(batchSize, analysisType);
+}
+
+async function processBatches(batchSize, analysisType) {
+    const totalLogs = fortisiemLogs.length;
+    
+    for (let i = 0; i < totalLogs && currentProcessingState.isProcessing; i += batchSize) {
+        if (currentProcessingState.isPaused) {
+            while (currentProcessingState.isPaused && currentProcessingState.isProcessing) {
+                await new Promise(resolve => setTimeout(resolve, 1000));
+            }
+            if (!currentProcessingState.isProcessing) break;
+        }
+
+        const batch = fortisiemLogs.slice(i, i + batchSize);
+        currentProcessingState.currentBatch = Math.floor(i / batchSize) + 1;
+        
+        addToActivityLog('fortisiem', `Processing batch ${currentProcessingState.currentBatch}/${currentProcessingState.totalBatches} (${batch.length} logs)`);
+
+        // Process current batch
+        await processBatch(batch, analysisType);
+        
+        // Update progress
+        currentProcessingState.processedCount += batch.length;
+        updateProgress();
+        
+        // Small delay between batches
+        await new Promise(resolve => setTimeout(resolve, 500));
+    }
+
+    // Processing complete
+    if (currentProcessingState.isProcessing) {
+        addToActivityLog('fortisiem', `✅ Bulk processing complete! Processed ${currentProcessingState.processedCount} logs`, 'success');
+        elements.exportResults.disabled = false;
+    }
+    
+    // Reset UI
+    elements.startProcessing.disabled = false;
+    elements.pauseProcessing.disabled = true;
+    elements.stopProcessing.disabled = true;
+    currentProcessingState.isProcessing = false;
+}
+
+async function processBatch(batch, analysisType) {
+    let successful = 0;
+    let failed = 0;
+    
+    // Process with limited concurrency
+    const concurrencyLimit = 5;
+    
+    for (let i = 0; i < batch.length; i += concurrencyLimit) {
+        const chunk = batch.slice(i, i + concurrencyLimit);
+        const chunkPromises = chunk.map(log => 
+            processSingleLog(log, analysisType)
+                .then(() => successful++)
+                .catch(() => failed++)
+        );
+        
+        await Promise.allSettled(chunkPromises);
+        await new Promise(resolve => setTimeout(resolve, 200));
+    }
+    
+    if (failed > 0) {
+        addToActivityLog('fortisiem', `Batch completed: ${successful} successful, ${failed} failed`, 'warning');
+    } else {
+        addToActivityLog('fortisiem', `Batch completed: ${successful} successful, ${failed} failed`);
+    }
+}
+
+async function processSingleLog(log, analysisType) {
+    try {
+        const response = await fetch(`${SOC_AI_BACKEND}/api/analyze`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(log)
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
+
+        const result = await response.json();
+        
+        // Create processed alert from result - SIMPLIFIED
+        const tier1 = result.tier1_analysis || {};
+        const tier2 = result.tier2_analysis || {};
+        const { sourceIP, destinationIP } = extractIPAddresses(result, log);
+        
+        // NEW: Get country information for bulk processing
+        const sourceCountry = await getCountryForIP(sourceIP);
+        const destinationCountry = await getCountryForIP(destinationIP);
+        
+        const processedAlert = {
+            id: generateAlertId(),
+            alertNumber: alertCounter++,
+            timestamp: new Date().toISOString(),
+            type: log['Event Type'] || 'Unknown',
+            severity: (tier2.severity || 'unknown').toLowerCase(),
+            confidence: Math.round((tier2.confidence || 0) * 100),
+            summary: `Bulk Analysis: ${tier2.verdict || 'analyzed'}`,
+            agent: tier1.agent || 'Auto-routed',
+            recommendations: tier2.recommended_actions || ['Review alert'],
+            // ✅ Store IP addresses directly
+            sourceIP: sourceIP,
+            destinationIP: destinationIP,
+            // NEW: Store country information
+            sourceCountry: sourceCountry,
+            destinationCountry: destinationCountry,
+            // Also store original IPs as backup
+            srcip: log.srcip,
+            dstip: log.dstip,
+            isBulkProcessed: true
+        };
+
+        processedAlerts.push(processedAlert);
+        updateThreatCounts(processedAlert);
+        
+        return processedAlert;
+        
+    } catch (error) {
+        console.error('Error processing log:', error);
+        // Create fallback alert for failed processing
+        const fallbackAlert = createFallbackAlert(log);
+        fallbackAlert.isBulkProcessed = true;
+        processedAlerts.push(fallbackAlert);
+        throw error;
+    }
+}
+
+function updateThreatCounts(alert) {
+    if (alert.severity === 'critical' || alert.severity === 'high') {
+        elements.criticalFound.textContent = parseInt(elements.criticalFound.textContent) + 1;
+    } else if (alert.severity === 'medium') {
+        elements.highFound.textContent = parseInt(elements.highFound.textContent) + 1;
+    }
+}
+
+function updateProgress() {
+    const progress = (currentProcessingState.processedCount / fortisiemLogs.length) * 100;
+    elements.processingProgress.style.width = `${progress}%`;
+    elements.processingProgress.textContent = `${Math.round(progress)}%`;
+    elements.processedLogs.textContent = currentProcessingState.processedCount;
+    elements.remainingLogs.textContent = fortisiemLogs.length - currentProcessingState.processedCount;
+}
+
+function togglePauseProcessing() {
+    currentProcessingState.isPaused = !currentProcessingState.isPaused;
+    elements.pauseProcessing.textContent = currentProcessingState.isPaused ? 'Resume' : 'Pause';
+    elements.pauseProcessing.className = currentProcessingState.isPaused ? 'btn-success' : 'btn-warning';
+    
+    addToActivityLog('fortisiem', currentProcessingState.isPaused ? '⏸️ Processing paused' : '▶️ Processing resumed');
+}
+
+function stopProcessing() {
+    currentProcessingState.isProcessing = false;
+    elements.startProcessing.disabled = false;
+    elements.pauseProcessing.disabled = true;
+    elements.stopProcessing.disabled = true;
+    
+    addToActivityLog('fortisiem', `🛑 Processing stopped. Processed ${currentProcessingState.processedCount} of ${fortisiemLogs.length} logs`, 'warning');
+}
+
+async function analyzeSample() {
+    if (fortisiemLogs.length === 0) {
+        addToActivityLog('fortisiem', 'No logs available for sample analysis', 'error');
+        return;
+    }
+
+    const sampleSize = 100;
+    const sample = fortisiemLogs.slice(0, Math.min(sampleSize, fortisiemLogs.length));
+    
+    addToActivityLog('fortisiem', `Analyzing sample of ${sample.length} logs...`);
+    
+    // Use the same processing but with a small batch
+    const originalLogs = fortisiemLogs;
+    fortisiemLogs = sample;
+    
+    await startProcessing();
+    
+    // Restore original logs
+    fortisiemLogs = originalLogs;
+}
+
+function clearFortiSIEM() {
+    fortisiemLogs = [];
+    currentProcessingState = {
+        isProcessing: false,
+        isPaused: false,
+        currentBatch: 0,
+        totalBatches: 0,
+        processedCount: 0
+    };
+    
+    updateLogPreview();
+    updateProgress();
+    
+    elements.totalLogs.textContent = '0';
+    elements.processedLogs.textContent = '0';
+    elements.remainingLogs.textContent = '0';
+    elements.criticalFound.textContent = '0';
+    elements.highFound.textContent = '0';
+    elements.mediumFound.textContent = '0';
+    
+    addToActivityLog('fortisiem', 'Cleared all logs and reset processing');
+}
+
+function exportResults() {
+    if (processedAlerts.length === 0) {
+        addToActivityLog('fortisiem', 'No results to export', 'error');
+        return;
+    }
+
+    // Create CSV content
+    let csvContent = 'ID,Time,Type,Severity,Source IP,Source Country,Destination IP,Destination Country,Confidence,Agent,Summary\n';
+    
+    processedAlerts.forEach(alert => {
+        if (alert.isBulkProcessed) {
+            const sourceCountry = alert.sourceCountry ? alert.sourceCountry.country : 'Unknown';
+            const destinationCountry = alert.destinationCountry ? alert.destinationCountry.country : 'Unknown';
+            
+            csvContent += `"${alert.alertNumber}","${alert.timestamp}","${alert.type}","${alert.severity}","${alert.sourceIP}","${sourceCountry}","${alert.destinationIP}","${destinationCountry}","${alert.confidence}%","${alert.agent}","${alert.summary}"\n`;
+        }
+    });
+
+    // Create download link
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `soc-ai-results-${new Date().toISOString().split('T')[0]}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+    
+    addToActivityLog('fortisiem', `Exported ${processedAlerts.filter(a => a.isBulkProcessed).length} results to CSV`);
+}
+
+// Fallback analysis for single alerts
+async function fallbackAnalysis(alertData, alertType) {
+    addToActivityLog('soc', 'Using fallback rule-based analysis', 'warning');
+    
+    // Simulate processing delay
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    const fallbackAlert = createFallbackAlert(alertData);
+    
+    elements.resultsPlaceholder.style.display = 'none';
+    elements.analysisResults.style.display = 'block';
+    
+    // Display fallback results
+    elements.threatAssessment.innerHTML = `Fallback analysis: <strong>${fallbackAlert.severity} severity</strong>`;
+    elements.aiAgentUsed.textContent = 'Fallback (AI Unavailable)';
+    elements.severityBadges.innerHTML = `
+        <div class="severity-badge ${fallbackAlert.severity}">${fallbackAlert.severity}</div>
+        <div class="alert-confidence confidence-${getConfidenceLevel(fallbackAlert.confidence)}">${fallbackAlert.confidence}% confidence</div>
+    `;
+    
+    let actionsHTML = '<ul>';
+    fallbackAlert.recommendations.forEach(action => {
+        actionsHTML += `<li>${action}</li>`;
+    });
+    actionsHTML += '</ul>';
+    elements.recommendedActions.innerHTML = actionsHTML;
+    
+    elements.aiAnalysis.innerHTML = `
+        <div class="log-entry"><strong>Fallback Analysis:</strong> SOC AI backend unavailable</div>
+        <div class="log-entry"><strong>Event Type:</strong> ${fallbackAlert.type}</div>
+        <div class="log-entry"><strong>Recommendation:</strong> Check backend connection and retry</div>
+    `;
+    
+    elements.showJustificationBtn.style.display = 'none';
+    
+    processedAlerts.push(fallbackAlert);
+    saveStoredData();
+    updateDashboard();
+}
+
+// Create fallback alert
+function createFallbackAlert(log) {
+    const eventType = log['Event Type'] || 'Unknown';
+    
+    // Simple rule-based fallback
+    let severity = 'low';
+    let confidence = 50;
+    
+    if (eventType.includes('malware') || eventType.includes('attack')) {
+        severity = 'high';
+        confidence = 70;
+    } else if (eventType.includes('suspicious') || eventType.includes('unauthorized')) {
+        severity = 'medium';
+        confidence = 60;
+    }
+    
+    return {
+        id: generateAlertId(),
+        alertNumber: alertCounter++,
+        timestamp: log['Event Receive Time'] || new Date().toISOString(),
+        type: eventType,
+        severity: severity,
+        confidence: confidence,
+        summary: `Fallback Analysis: ${severity} severity`,
+        agent: 'Fallback',
+        recommendations: ['Review alert details manually', 'Check system logs'],
+        sourceIP: log.srcip || 'Unknown',
+        destinationIP: log.dstip || 'Unknown',
+        srcip: log.srcip,
+        dstip: log.dstip,
+        isFallback: true
+    };
+}
+
+// Toggle justification display
+function toggleJustification() {
+    const isVisible = elements.severityJustification.style.display !== 'none';
+    elements.severityJustification.style.display = isVisible ? 'none' : 'block';
+    elements.showJustificationBtn.textContent = isVisible ? 'View Justification' : 'Hide Justification';
+}
+
+// ✅ FIXED DASHBOARD - PROPER IP DISPLAY WITH COUNTRY
+function updateDashboard() {
+    const totalAlerts = processedAlerts.length;
+    const criticalAlerts = processedAlerts.filter(a => a.severity === 'critical' || a.severity === 'high').length;
+    const highAlerts = processedAlerts.filter(a => a.severity === 'high').length;
+    const resolvedAlerts = processedAlerts.filter(a => a.resolved).length;
+
+    elements.totalAlertsDash.textContent = totalAlerts;
+    elements.criticalAlerts.textContent = criticalAlerts;
+    elements.highAlerts.textContent = highAlerts;
+    elements.resolvedAlerts.textContent = resolvedAlerts;
+
+    // Update alerts table
+    if (processedAlerts.length === 0) {
+        elements.alertsDashboard.innerHTML = `
+            <div class="empty-dashboard">
+                <h3>No alerts analyzed yet</h3>
+                <p>Submit alerts to see them displayed here</p>
+            </div>
+        `;
+        return;
+    }
+
+    let filteredAlerts = [...processedAlerts];
+    
+    // Apply search filter
+    const searchTerm = elements.searchDashboard.value.toLowerCase();
+    if (searchTerm) {
+        filteredAlerts = filteredAlerts.filter(alert => 
+            alert.type.toLowerCase().includes(searchTerm) ||
+            alert.summary.toLowerCase().includes(searchTerm) ||
+            (alert.sourceIP && alert.sourceIP.toLowerCase().includes(searchTerm)) ||
+            (alert.destinationIP && alert.destinationIP.toLowerCase().includes(searchTerm)) ||
+            (alert.sourceCountry && alert.sourceCountry.country.toLowerCase().includes(searchTerm)) ||
+            (alert.destinationCountry && alert.destinationCountry.country.toLowerCase().includes(searchTerm))
+        );
+    }
+    
+    // Apply sorting
+    const sortBy = elements.sortAlerts.value;
+    filteredAlerts.sort((a, b) => {
+        switch (sortBy) {
+            case 'newest':
+                return new Date(b.timestamp) - new Date(a.timestamp);
+            case 'oldest':
+                return new Date(a.timestamp) - new Date(b.timestamp);
+            case 'severity':
+                const severityOrder = { critical: 4, high: 3, medium: 2, low: 1, info: 0 };
+                return severityOrder[b.severity] - severityOrder[a.severity];
+            default:
+                return 0;
+        }
+    });
+
+    // Create table - FIXED: Proper IP address display with country
+    let tableHTML = `
+        <table class="alerts-table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Time</th>
+                    <th>Type</th>
+                    <th>Severity</th>
+                    <th>Source IP</th>
+                    <th>Destination IP</th>
+                    <th>Countries</th>
+                    <th>Confidence</th>
+                    <th>Agent</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+    `;
+
+    filteredAlerts.forEach(alert => {
+        // ✅ FIXED: Use the actual IP fields from the alert object
+        const sourceIP = alert.sourceIP || alert.srcip || 'N/A';
+        const destinationIP = alert.destinationIP || alert.dstip || 'N/A';
+        
+        // NEW: Country display
+        const sourceCountryCode = alert.sourceCountry ? alert.sourceCountry.country_code : 'N/A';
+        const destinationCountryCode = alert.destinationCountry ? alert.destinationCountry.country_code : 'N/A';
+        const sourceCountryFlag = getCountryFlag(sourceCountryCode);
+        const destinationCountryFlag = getCountryFlag(destinationCountryCode);
+        
+        tableHTML += `
+            <tr>
+                <td>${alert.alertNumber}</td>
+                <td>${new Date(alert.timestamp).toLocaleTimeString()}</td>
+                <td>${alert.type}</td>
+                <td><span class="alert-severity ${alert.severity}">${alert.severity}</span></td>
+                <td><span class="ip-address ip-source">${sourceIP}</span></td>
+                <td><span class="ip-address ip-destination">${destinationIP}</span></td>
+                <td>
+                    ${sourceCountryFlag !== '🏴' ? `<span class="country-badge" title="${alert.sourceCountry ? alert.sourceCountry.country : 'Unknown'}">${sourceCountryFlag} ${sourceCountryCode}</span>` : ''}
+                    ${destinationCountryFlag !== '🏴' ? `<span class="country-badge" title="${alert.destinationCountry ? alert.destinationCountry.country : 'Unknown'}">${destinationCountryFlag} ${destinationCountryCode}</span>` : ''}
+                </td>
+                <td><span class="alert-confidence confidence-${getConfidenceLevel(alert.confidence)}">${alert.confidence}%</span></td>
+                <td>${alert.agent}</td>
+                <td>
+                    <div class="alert-actions">
+                        <button onclick="viewAlertDetails('${alert.id}')">View</button>
+                        <button onclick="resolveAlert('${alert.id}')" class="btn-success">Resolve</button>
+                    </div>
+                </td>
+            </tr>
+        `;
+    });
+
+    tableHTML += `
+            </tbody>
+        </table>
+    `;
+
+    elements.alertsDashboard.innerHTML = tableHTML;
+}
+
+// View alert details
+function viewAlertDetails(alertId) {
+    const alert = processedAlerts.find(a => a.id === alertId);
+    if (!alert) return;
+
+    const sourceIP = alert.sourceIP || alert.srcip || 'N/A';
+    const destinationIP = alert.destinationIP || alert.dstip || 'N/A';
+    const sourceCountry = alert.sourceCountry || {};
+    const destinationCountry = alert.destinationCountry || {};
+
+    // Create detailed popup
+    const popup = document.createElement('div');
+    popup.className = 'popup-overlay';
+    popup.innerHTML = `
+        <div class="popup-content">
+            <div class="popup-header">
+                <h2>Alert Details #${alert.alertNumber}</h2>
+                <button onclick="this.closest('.popup-overlay').remove()" style="background: var(--danger); color: white; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer;">Close</button>
+            </div>
+            
+            <div class="popup-section">
+                <h3>Basic Information</h3>
+                <div class="popup-data-grid">
+                    <div><strong>Type:</strong> ${alert.type}</div>
+                    <div><strong>Time:</strong> ${new Date(alert.timestamp).toLocaleString()}</div>
+                    <div><strong>Severity:</strong> <span class="severity-badge ${alert.severity}">${alert.severity}</span></div>
+                    <div><strong>Confidence:</strong> ${alert.confidence}%</div>
+                    <div><strong>Agent:</strong> ${alert.agent}</div>
+                </div>
+            </div>
+
+            <div class="popup-section">
+                <h3>Network Information</h3>
+                <div class="popup-data-grid">
+                    <div><strong>Source IP:</strong> <span class="ip-address ip-source">${sourceIP}</span></div>
+                    <div><strong>Destination IP:</strong> <span class="ip-address ip-destination">${destinationIP}</span></div>
+                </div>
+            </div>
+
+            <div class="popup-section">
+                <h3>Country Information</h3>
+                <div class="country-details">
+                    <div class="country-detail">
+                        <span class="label">Source Country:</span> ${sourceCountry.country || 'Unknown'}
+                        ${sourceCountry.country_code && sourceCountry.country_code !== 'XX' ? `(${getCountryFlag(sourceCountry.country_code)} ${sourceCountry.country_code})` : ''}
+                        ${sourceCountry.is_in_european_union ? ' 🇪🇺 EU' : ''}
+                    </div>
+                    <div class="country-detail">
+                        <span class="label">Destination Country:</span> ${destinationCountry.country || 'Unknown'}
+                        ${destinationCountry.country_code && destinationCountry.country_code !== 'XX' ? `(${getCountryFlag(destinationCountry.country_code)} ${destinationCountry.country_code})` : ''}
+                        ${destinationCountry.is_in_european_union ? ' 🇪🇺 EU' : ''}
+                    </div>
+                    ${sourceCountry.continent ? `<div class="country-detail"><span class="label">Source Continent:</span> ${sourceCountry.continent}</div>` : ''}
+                    ${destinationCountry.continent ? `<div class="country-detail"><span class="label">Destination Continent:</span> ${destinationCountry.continent}</div>` : ''}
+                </div>
+            </div>
+
+            <div class="popup-section">
+                <h3>Analysis Results</h3>
+                <div style="background: #2d3035; padding: 15px; border-radius: 5px;">
+                    <strong>Summary:</strong> ${alert.summary}
+                </div>
+            </div>
+
+            <div class="popup-section">
+                <h3>Recommended Actions</h3>
+                <ul>
+                    ${alert.recommendations.map(action => `<li>${action}</li>`).join('')}
+                </ul>
+            </div>
+
+            <div class="popup-actions">
+                <button class="enhanced-btn enhanced-btn-success" onclick="resolveAlert('${alert.id}'); this.closest('.popup-overlay').remove();">Mark Resolved</button>
+                <button class="enhanced-btn enhanced-btn-info" onclick="analyzeSimilarAlert('${alert.id}')">Analyze Similar</button>
+                <button class="enhanced-btn enhanced-btn-danger" onclick="this.closest('.popup-overlay').remove()">Close</button>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(popup);
+}
+
+// Resolve alert
+function resolveAlert(alertId) {
+    const alertIndex = processedAlerts.findIndex(a => a.id === alertId);
+    if (alertIndex !== -1) {
+        processedAlerts[alertIndex].resolved = true;
+        updateDashboard();
+        addToActivityLog('dashboard', `Resolved alert ${processedAlerts[alertIndex].alertNumber}`);
+    }
+}
+
+// Analyze similar alert
+function analyzeSimilarAlert(alertId) {
+    const alert = processedAlerts.find(a => a.id === alertId);
+    if (alert) {
+        // Create a similar alert template
+        const sourceIP = alert.sourceIP || alert.srcip || "192.168.1.100";
+        const destinationIP = alert.destinationIP || alert.dstip || "8.8.8.8";
+        
+        const similarAlert = {
+            "Event Type": alert.type,
+            "srcip": sourceIP,
+            "dstip": destinationIP,
+            "Raw Event Log": `Similar to alert ${alert.alertNumber} - ${alert.type}`
+        };
+        
+        elements.alertData.value = JSON.stringify(similarAlert, null, 2);
+        switchTab('soc-tester');
+        
+        // Close popup if open
+        const popup = document.querySelector('.popup-overlay');
+        if (popup) popup.remove();
+    }
+}
+
+// Debug function to check IP data
+function debugAlerts() {
+    console.log('=== DEBUG PROCESSED ALERTS ===');
+    console.log('Total alerts:', processedAlerts.length);
+    
+    if (processedAlerts.length === 0) {
+        console.log('No alerts to debug');
+        alert('No alerts processed yet. Submit some alerts first.');
+        return;
+    }
+    
+    processedAlerts.slice(0, 5).forEach((alert, index) => {
+        console.log(`Alert ${index + 1}:`, {
+            id: alert.id,
+            sourceIP: alert.sourceIP,
+            destinationIP: alert.destinationIP,
+            sourceCountry: alert.sourceCountry,
+            destinationCountry: alert.destinationCountry,
+            srcip: alert.srcip,
+            dstip: alert.dstip
+        });
+    });
+    
+    alert(`Debug Info:\nTotal Alerts: ${processedAlerts.length}\nCheck console for IP and country details (F12 → Console)`);
+}
+
+// Utility functions
+function generateAlertId() {
+    return 'alert_' + Math.random().toString(36).substr(2, 9);
+}
+
+function getConfidenceLevel(confidence) {
+    if (confidence >= 80) return 'high';
+    if (confidence >= 60) return 'medium';
+    return 'low';
+}
+
+function loadStoredData() {
+    try {
+        const stored = localStorage.getItem('socProcessedAlerts');
+        if (stored) {
+            const data = JSON.parse(stored);
+            processedAlerts = data.alerts || [];
+            alertCounter = data.alertCounter || Math.max(...processedAlerts.map(a => a.alertNumber), 0) + 1;
+            
+            console.log('✅ Loaded alerts from storage:', processedAlerts.length);
+            addToActivityLog('system', `Loaded ${processedAlerts.length} alerts from storage`);
+            
+            updateDashboard();
+        }
+    } catch (error) {
+        console.error('Error loading stored data:', error);
+        localStorage.removeItem('socProcessedAlerts');
+        addToActivityLog('system', 'Cleared corrupted storage data', 'warning');
+    }
+}
+
+function saveStoredData() {
+    try {
+        const dataToStore = {
+            alerts: processedAlerts,
+            alertCounter: alertCounter,
+            timestamp: new Date().toISOString()
+        };
+        
+        localStorage.setItem('socProcessedAlerts', JSON.stringify(dataToStore));
+    } catch (error) {
+        console.error('Storage error:', error);
+    }
+}
+
+function clearAllStorage() {
+    localStorage.removeItem('socProcessedAlerts');
+    processedAlerts = [];
+    alertCounter = 1;
+    updateDashboard();
+    addToActivityLog('system', '🧹 Cleared all storage data', 'success');
+    alert('All stored alerts have been cleared!');
+}
+
+window.clearAllStorage = clearAllStorage;
+window.updateAllCountries = updateAllCountries;
+
+function updateUI() {
+    updateDashboard();
+}
+
+function exportDashboard() {
+    if (processedAlerts.length === 0) {
+        addToActivityLog('dashboard', 'No alerts to export', 'error');
+        return;
+    }
+
+    // Create CSV content
+    let csvContent = 'ID,Time,Type,Severity,Source IP,Source Country,Destination IP,Destination Country,Confidence,Agent,Summary\n';
+    
+    processedAlerts.forEach(alert => {
+        const sourceIP = alert.sourceIP || alert.srcip || 'N/A';
+        const destinationIP = alert.destinationIP || alert.dstip || 'N/A';
+        const sourceCountry = alert.sourceCountry ? alert.sourceCountry.country : 'Unknown';
+        const destinationCountry = alert.destinationCountry ? alert.destinationCountry.country : 'Unknown';
+        
+        csvContent += `"${alert.alertNumber}","${alert.timestamp}","${alert.type}","${alert.severity}","${sourceIP}","${sourceCountry}","${destinationIP}","${destinationCountry}","${alert.confidence}%","${alert.agent}","${alert.summary}"\n`;
+    });
+
+    // Create download link
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `soc-dashboard-${new Date().toISOString().split('T')[0]}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+    
+    addToActivityLog('dashboard', `Exported ${processedAlerts.length} alerts to CSV`);
+}
+
+// Make functions available globally
+window.viewAlertDetails = viewAlertDetails;
+window.resolveAlert = resolveAlert;
+window.debugAlerts = debugAlerts;
+window.analyzeSimilarAlert = analyzeSimilarAlert;
+window.processedAlerts = processedAlerts;
+
+console.log('✅ SOC AI Dashboard initialized successfully');
+console.log('🌐 Backend URL:', SOC_AI_BACKEND);
+</script>
 </body>
 </html>

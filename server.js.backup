@@ -1,0 +1,292 @@
+const express = require('express');
+const cors = require('cors');
+const app = express();
+const port = 11435;
+
+// Import AI agents from scripts folder
+const appAI = require('./scripts/appAI');
+const endpointAI = require('./scripts/endpointAI');
+const networkAI = require('./scripts/networkAI');
+const threatIntelAI = require('./scripts/threatIntelAI');
+
+// Middleware
+app.use(cors());
+app.use(express.json({ limit: '10mb' }));
+
+// Mount AI agents
+app.use('/api/app', appAI);
+app.use('/api/endpoint', endpointAI);
+app.use('/api/network', networkAI);
+app.use('/api/threat-intel', threatIntelAI);
+
+// Smart routing function
+function routeToAppropriateAgent(alert) {
+    const eventType = (alert['Event Type'] || '').toLowerCase();
+    const subtype = (alert.subtype || '').toLowerCase();
+    const eventName = (alert['Event Name'] || '').toLowerCase();
+    
+    console.log('🔀 ROUTING DEBUG:', { eventType, subtype, eventName });
+
+    // Wireless/Application events → appAI
+    if (eventType.includes('wireless') || eventType.includes('wifi') || 
+        eventType.includes('rogue') || subtype.includes('wireless') ||
+        eventName.includes('wireless') || eventName.includes('wifi') ||
+        eventName.includes('rogue') || eventType.includes('app')) {
+        console.log('🔀 Routing to AppAI');
+        return 'app';
+    }
+    
+    // Network events → networkAI  
+    else if (eventType.includes('traffic') || eventType.includes('firewall') ||
+             eventType.includes('network') || eventType.includes('port') ||
+             eventName.includes('traffic') || eventName.includes('firewall') ||
+             eventName.includes('network') || eventType.includes('fortigate-traffic')) {
+        console.log('🔀 Routing to NetworkAI');
+        return 'network';
+    }
+    
+    // Endpoint events → endpointAI
+    else if (eventType.includes('vpn') || eventType.includes('endpoint') ||
+             eventType.includes('process') || eventType.includes('lateral') ||
+             eventName.includes('vpn') || eventName.includes('endpoint') ||
+             eventName.includes('process') || eventType.includes('system')) {
+        console.log('🔀 Routing to EndpointAI');
+        return 'endpoint';
+    }
+    
+    // Default to threatIntel for comprehensive analysis
+    else {
+        console.log('🔀 Routing to ThreatIntelAI (default)');
+        return 'threat-intel';
+    }
+}
+
+// Helper function to call agents
+async function analyzeWithAgent(endpoint, data) {
+    try {
+        const response = await fetch(endpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+        
+        if (!response.ok) {
+            throw new Error(`Agent error: ${response.status} ${response.statusText}`);
+        }
+        
+        return await response.json();
+    } catch (error) {
+        console.error(`❌ Agent call failed for ${endpoint}:`, error.message);
+        throw error;
+    }
+}
+
+// Main analysis endpoint with smart routing
+app.post('/api/analyze', async (req, res) => {
+    const requestId = Math.random().toString(36).substring(2, 10);
+    console.log(`\n=== 🚀 MAIN ANALYSIS REQUEST ${requestId} ===`);
+    
+    try {
+        const alert = req.body;
+        console.log(`[${requestId}] Received alert:`, alert['Event Type'] || 'Unknown Event');
+        
+        // Step 1: Route to appropriate first-tier agent
+        const agentType = routeToAppropriateAgent(alert);
+        
+        let firstTierResult;
+        switch (agentType) {
+            case 'app':
+                firstTierResult = await analyzeWithAgent('http://localhost:11435/api/app/analyze', alert);
+                break;
+            case 'network':
+                firstTierResult = await analyzeWithAgent('http://localhost:11435/api/network/analyze', alert);
+                break;
+            case 'endpoint':
+                firstTierResult = await analyzeWithAgent('http://localhost:11435/api/endpoint/analyze', alert);
+                break;
+            case 'threat-intel':
+                // Send directly to threatIntelAI
+                console.log(`[${requestId}] Sending directly to ThreatIntelAI`);
+                firstTierResult = await analyzeWithAgent('http://localhost:11435/api/threat-intel/analyze', alert);
+                return res.json({
+                    ...firstTierResult,
+                    routing_info: {
+                        first_tier_agent: 'threat-intel',
+                        final_agent: 'threat-intel',
+                        analysis_flow: 'direct_threat_intel'
+                    }
+                });
+            default:
+                throw new Error(`Unknown agent type: ${agentType}`);
+        }
+
+        console.log(`[${requestId}] ✅ First-tier analysis completed by: ${agentType}`);
+        
+        // Step 2: Send to threatIntelAI for final correlation
+        console.log(`[${requestId}] 🔄 Sending to ThreatIntelAI for correlation`);
+        const finalResult = await analyzeWithAgent('http://localhost:11435/api/threat-intel/analyze', {
+            original_alert: alert,
+            first_tier_analysis: firstTierResult,
+            agent_used: agentType,
+            timestamp: new Date().toISOString()
+        });
+
+        console.log(`[${requestId}] ✅ Final threat intelligence analysis completed`);
+        
+        // Step 3: Return combined result to frontend
+        const response = {
+            ...finalResult,
+            routing_info: {
+                first_tier_agent: agentType,
+                final_agent: 'threat-intel',
+                analysis_flow: 'first_tier → threat_intel',
+                request_id: requestId
+            }
+        };
+
+        console.log(`[${requestId}] 📤 Sending final response to frontend`);
+        res.json(response);
+
+    } catch (error) {
+        console.error(`[${requestId}] ❌ Analysis error:`, error);
+        res.status(500).json({ 
+            error: 'Analysis failed',
+            message: error.message,
+            timestamp: new Date().toISOString(),
+            request_id: requestId
+        });
+    }
+});
+
+// Health check endpoint that checks all agents
+app.get('/api/health', async (req, res) => {
+    const health = {
+        status: 'healthy',
+        timestamp: new Date().toISOString(),
+        agents: {},
+        version: '1.0.0'
+    };
+
+    try {
+        // Check each agent
+        const agents = [
+            { name: 'app', endpoint: 'http://localhost:11435/api/app/health' },
+            { name: 'endpoint', endpoint: 'http://localhost:11435/api/endpoint/health' },
+            { name: 'network', endpoint: 'http://localhost:11435/api/network/health' },
+            { name: 'threat-intel', endpoint: 'http://localhost:11435/api/threat-intel/health' }
+        ];
+
+        for (const agent of agents) {
+            try {
+                const response = await fetch(agent.endpoint, { timeout: 5000 });
+                health.agents[agent.name] = await response.json();
+            } catch (error) {
+                health.agents[agent.name] = { 
+                    status: 'unhealthy', 
+                    error: error.message 
+                };
+            }
+        }
+
+        // Check if any agent is unhealthy
+        const unhealthyAgents = Object.values(health.agents).filter(agent => agent.status !== 'healthy');
+        if (unhealthyAgents.length > 0) {
+            health.status = 'degraded';
+            health.unhealthy_agents = unhealthyAgents.length;
+        }
+
+    } catch (error) {
+        health.status = 'unhealthy';
+        health.error = error.message;
+    }
+
+    res.json(health);
+});
+
+// Debug endpoint to test routing
+app.post('/api/debug-routing', (req, res) => {
+    const alert = req.body;
+    const agentType = routeToAppropriateAgent(alert);
+    
+    res.json({
+        event_type: alert['Event Type'],
+        subtype: alert.subtype,
+        event_name: alert['Event Name'],
+        suggested_agent: agentType,
+        routing_logic: 'Event type based routing',
+        timestamp: new Date().toISOString()
+    });
+});
+
+// Test endpoint with sample data
+app.get('/api/test', (req, res) => {
+    res.json({
+        message: 'SOC AI Backend is running!',
+        endpoints: {
+            'POST /api/analyze': 'Main analysis endpoint',
+            'GET /api/health': 'Health check',
+            'POST /api/debug-routing': 'Test routing logic',
+            'POST /api/app/analyze': 'Direct app analysis',
+            'POST /api/endpoint/analyze': 'Direct endpoint analysis', 
+            'POST /api/network/analyze': 'Direct network analysis',
+            'POST /api/threat-intel/analyze': 'Direct threat intelligence'
+        },
+        timestamp: new Date().toISOString()
+    });
+});
+
+// Global error handler
+app.use((error, req, res, next) => {
+    console.error('🛑 Global error handler:', error);
+    res.status(500).json({
+        error: 'Internal server error',
+        message: error.message,
+        timestamp: new Date().toISOString()
+    });
+});
+
+// 404 handler
+app.use('*', (req, res) => {
+    res.status(404).json({
+        error: 'Endpoint not found',
+        available_endpoints: [
+            'POST /api/analyze',
+            'GET /api/health', 
+            'POST /api/debug-routing',
+            'GET /api/test'
+        ],
+        timestamp: new Date().toISOString()
+    });
+});
+
+// Start server
+app.listen(port, () => {
+    console.log(`\n🚀 SOC AI Backend running on port ${port}`);
+    console.log(`📍 Local: http://localhost:${port}`);
+    console.log(`\n📊 Available endpoints:`);
+    console.log(`   POST /api/analyze          - Main analysis endpoint (recommended)`);
+    console.log(`   GET  /api/health           - Health check all agents`);
+    console.log(`   POST /api/debug-routing    - Test routing logic`);
+    console.log(`   GET  /api/test             - Test endpoint`);
+    console.log(`\n🔧 Direct agent endpoints:`);
+    console.log(`   POST /api/app/analyze      - Direct app analysis`);
+    console.log(`   POST /api/endpoint/analyze - Direct endpoint analysis`);
+    console.log(`   POST /api/network/analyze  - Direct network analysis`);
+    console.log(`   POST /api/threat-intel/analyze - Direct threat intelligence`);
+    console.log(`\n💡 Architecture: Alert → First-tier Agent → ThreatIntelAI → Frontend`);
+    console.log(`⏰ Started at: ${new Date().toISOString()}`);
+    console.log(`=========================================\n`);
+});
+
+// Graceful shutdown
+process.on('SIGINT', () => {
+    console.log('\n🛑 Shutting down SOC AI Backend gracefully...');
+    process.exit(0);
+});
+
+process.on('SIGTERM', () => {
+    console.log('\n🛑 SOC AI Backend received SIGTERM, shutting down...');
+    process.exit(0);
+});
+
+module.exports = app;
